@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cohort — sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --ink:#0E1B33; --paper:#F4F6FB; --panel:#FFFFFF;
+  --indigo:#3B4CC7; --indigo-dark:#2A3795; --indigo-soft:rgba(59,76,199,.08);
+  --gold:#E6A02C; --teal:#12968A; --rose:#C4485F;
+  --slate:#5B6788; --line:#E3E7F1; --line-strong:#CFD6E6;
+  --disp:"Bricolage Grotesque",sans-serif; --body:"Inter",sans-serif; --mono:"IBM Plex Mono",monospace;
+  --shadow:0 1px 2px rgba(14,27,51,.04),0 8px 24px rgba(14,27,51,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:var(--disp);letter-spacing:-.02em;font-weight:700}
+.mono{font-family:var(--mono)}
+button{font-family:var(--body)}
+input,select{font-family:var(--body);font-size:14.5px;color:var(--ink);background:#fff;border:1px solid var(--line-strong);border-radius:9px;padding:11px 13px;width:100%;transition:border-color .12s}
+input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-soft)}
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+.btn{font-weight:600;font-size:14.5px;border-radius:9px;padding:11px 18px;cursor:pointer;border:1px solid transparent;transition:.14s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-primary{background:var(--indigo);color:#fff}.btn-primary:hover{background:var(--indigo-dark)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}.btn-ghost:hover{border-color:var(--ink)}
+.btn-danger{background:transparent;color:var(--rose);border-color:transparent}
+.btn[disabled]{opacity:.55;cursor:default}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:22px;height:22px;border-radius:6px;background:var(--indigo);position:relative;flex:none}
+.brand .dot::after{content:"";position:absolute;inset:6px 6px auto auto;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.chip{font-family:var(--mono);font-size:11px;padding:2px 9px;border-radius:999px;font-weight:500;white-space:nowrap}
+.chip.ok{background:rgba(18,150,138,.12);color:#0B6A61}
+.chip.warn{background:rgba(230,160,44,.16);color:#8A5B08}
+.chip.mut{background:rgba(91,103,136,.12);color:var(--slate)}
+.chip.t1{background:rgba(230,160,44,.14);color:#8A5B08}.chip.t2{background:var(--indigo-soft);color:var(--indigo-dark)}
+
+/* ---------- login screen ---------- */
+.login-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+.login-left{background:var(--ink);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-left::before{content:"";position:absolute;bottom:-30%;left:-15%;width:70%;height:120%;background:radial-gradient(circle,rgba(230,160,44,.14),transparent 60%)}
+.login-left h1{font-size:clamp(26px,3vw,38px);line-height:1.1;max-width:14ch;position:relative}
+.login-left .sub{color:#AAB4CE;margin-top:14px;max-width:34ch;position:relative}
+.login-left .foot{font-family:var(--mono);font-size:12px;color:#AAB4CE;position:relative}
+.login-right{display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px;width:100%;max-width:420px}
+.card h2{font-size:22px;margin-bottom:4px}
+.card .hint{font-size:13.5px;color:var(--slate);margin-bottom:8px}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--slate);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:6px}
+.tabs button{flex:1;border:0;background:transparent;border-radius:7px;padding:8px 0;font-size:13.5px;font-weight:600;color:var(--slate);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(14,27,51,.08)}
+.err{background:rgba(196,72,95,.08);color:var(--rose);border:1px solid rgba(196,72,95,.25);border-radius:9px;padding:10px 13px;font-size:13.5px;margin-top:14px;display:none}
+.err.show{display:block}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+@media(max-width:840px){.login-wrap{grid-template-columns:1fr}.login-left{display:none}}
+
+/* ---------- app shell ---------- */
+.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.side{background:var(--ink);color:#fff;padding:22px 16px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh}
+.side .brand{color:#fff}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:14px;color:#AAB4CE;font-weight:500}
+.nav a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav a.on{color:#fff;background:rgba(255,255,255,.1)}
+.nav a .ic{font-family:var(--mono);font-size:11px;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+.side .spacer{flex:1}
+.userbox{border-top:1px solid rgba(255,255,255,.12);padding-top:16px;font-size:13px}
+.userbox .em{color:#AAB4CE;font-family:var(--mono);font-size:11.5px;word-break:break-all}
+.main{padding:30px 36px;max-width:1180px;width:100%}
+.page-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-h h1{font-size:26px}
+.page-h .crumb{font-family:var(--mono);font-size:12px;color:var(--slate)}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;align-items:center;flex-wrap:wrap}.side .spacer,.userbox{display:none}.nav{flex-direction:row}}
+
+/* ---------- widgets ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat .k{font-family:var(--mono);font-size:12px;color:var(--slate)}
+.stat .v{font-family:var(--disp);font-weight:700;font-size:30px;margin-top:6px}
+.stat .v small{font-family:var(--mono);font-size:13px;color:var(--teal);font-weight:500;margin-left:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.panel + .panel{margin-top:20px}
+.panel-t{font-family:var(--disp);font-weight:700;font-size:15px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:500;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.fn{display:grid;grid-template-columns:120px 1fr 34px;align-items:center;gap:10px;margin:8px 0}
+.fn .lbl{font-family:var(--mono);font-size:12px;color:var(--slate)}
+.fn .track{height:8px;background:var(--line);border-radius:5px;overflow:hidden}
+.fn .fill{height:100%;background:linear-gradient(90deg,var(--indigo),#6B79E0);border-radius:5px;transition:width .8s ease}
+.fn .n{font-family:var(--mono);font-size:13px;text-align:right;font-weight:500}
+.grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}}
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input[type=search]{max-width:320px}
+.empty{color:var(--slate);font-size:14px;padding:26px 0;text-align:center}
+.empty b{display:block;font-family:var(--disp);color:var(--ink);font-size:16px;margin-bottom:5px}
+.drop{border:1.5px dashed var(--line-strong);border-radius:12px;padding:30px;text-align:center;color:var(--slate);font-size:14px;transition:.14s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--indigo);background:var(--indigo-soft)}
+.drop b{display:block;font-family:var(--disp);color:var(--ink);font-size:16px;margin-bottom:4px}
+.note{font-size:12.5px;color:var(--slate);margin-top:10px}
+.note code{font-family:var(--mono);background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11.5px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:#fff;border-radius:11px;padding:13px 18px;font-size:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.22s;pointer-events:none;max-width:340px;z-index:99}
+.toast.show{opacity:1;transform:none}
+.result-summary{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0 6px}
+.result-summary .pill{border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px}
+.result-summary .pill b{font-family:var(--disp);font-size:20px;display:block}
+.pill.good b{color:var(--teal)}.pill.bad b{color:var(--rose)}.pill.mid b{color:var(--gold)}
+.errlist{margin-top:12px;font-size:13px}
+.errlist li{margin:5px 0 5px 18px;color:var(--rose)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ tiny framework ============================ */
+const $ = s => document.querySelector(s);
+const root = $("#root");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let AUTH = JSON.parse(localStorage.getItem("cohort_auth") || "null");
+let CFG = { google_client_id: null };
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 3200); }
+function saveAuth(a){ AUTH=a; localStorage.setItem("cohort_auth", JSON.stringify(a)); }
+function signOut(){ localStorage.removeItem("cohort_auth"); AUTH=null; location.hash="#/login"; render(); }
+
+async function api(path, opts={}){
+  const headers = opts.headers || {};
+  if (AUTH?.token) headers["Authorization"] = "Bearer " + AUTH.token;
+  if (opts.body && !(opts.body instanceof FormData)) headers["Content-Type"]="application/json";
+  const r = await fetch(path, {...opts, headers});
+  if (r.status === 401 && AUTH){ signOut(); throw new Error("Session expired — sign in again"); }
+  const data = await r.json().catch(()=> ({}));
+  if (!r.ok) throw new Error(data.detail || ("Request failed ("+r.status+")"));
+  return data;
+}
+const money = v => v==null ? "—" : "₹" + (v/100000).toFixed(1) + " LPA".replace(" ","\u00A0");
+const ROUND_LABELS = {resume_screening:"Screening",online_assessment:"Online test",technical_1:"Technical 1",technical_2:"Technical 2",technical_3:"Technical 3",managerial:"Managerial",hr:"HR",final_placement:"Placed"};
+
+/* ================================ login ================================ */
+function LoginView(){
+  root.innerHTML = `
+  <div class="login-wrap">
+    <div class="login-left">
+      <a class="brand" href="/"><span class="dot"></span>Cohort</a>
+      <div>
+        <h1>Every student, every round, one live view.</h1>
+        <p class="sub">Sign in to your college's placement workspace.</p>
+      </div>
+      <p class="foot">roster-verified onboarding · scoped access · accreditation-ready exports</p>
+    </div>
+    <div class="login-right">
+      <div class="card">
+        <div class="tabs" role="tablist">
+          <button id="tab-in" class="on">Sign in</button>
+          <button id="tab-claim">Claim account</button>
+        </div>
+
+        <div id="pane-in">
+          <h2>Welcome back</h2>
+          <p class="hint">Use your college Google account or your email and password.</p>
+          <div id="gbtn"></div>
+          <div class="divider" id="gdiv">OR</div>
+          <label for="li-email">Email</label>
+          <input id="li-email" type="email" autocomplete="email" placeholder="you@college.ac.in">
+          <label for="li-pass">Password</label>
+          <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+          <div class="err" id="li-err"></div>
+          <button class="btn btn-primary" id="li-go" style="width:100%;margin-top:18px">Sign in</button>
+        </div>
+
+        <div id="pane-claim" style="display:none">
+          <h2>Claim your account</h2>
+          <p class="hint">First time here, and your college doesn't use Google sign-in? Use the activation code from your placement cell.</p>
+          <label for="cl-college">College code</label>
+          <input id="cl-college" placeholder="e.g. demo" autocapitalize="none">
+          <label for="cl-roll">Roll number</label>
+          <input id="cl-roll" placeholder="e.g. 01DIT23004" autocapitalize="characters">
+          <label for="cl-code">Activation code</label>
+          <input id="cl-code" placeholder="8-character code" autocapitalize="characters">
+          <label for="cl-pass">Choose a password <span style="color:var(--slate);font-weight:400">(min 8 characters)</span></label>
+          <input id="cl-pass" type="password" autocomplete="new-password">
+          <div class="err" id="cl-err"></div>
+          <button class="btn btn-primary" id="cl-go" style="width:100%;margin-top:18px">Claim account &amp; sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const swap = claim => {
+    $("#pane-in").style.display = claim ? "none" : "";
+    $("#pane-claim").style.display = claim ? "" : "none";
+    $("#tab-in").classList.toggle("on", !claim);
+    $("#tab-claim").classList.toggle("on", claim);
+  };
+  $("#tab-in").onclick = () => swap(false);
+  $("#tab-claim").onclick = () => swap(true);
+
+  // Google button — rendered only if the server has a client ID configured
+  if (CFG.google_client_id){
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+    s.onload = () => {
+      google.accounts.id.initialize({
+        client_id: CFG.google_client_id,
+        callback: async resp => {
+          try{
+            const d = await api("/api/auth/google", {method:"POST", body: JSON.stringify({credential: resp.credential})});
+            saveAuth(d); enterApp();
+          }catch(e){ showErr("#li-err", e.message); }
+        }
+      });
+      google.accounts.id.renderButton($("#gbtn"), {theme:"outline", size:"large", width:356, text:"continue_with"});
+    };
+    document.head.appendChild(s);
+  } else { $("#gbtn").style.display="none"; $("#gdiv").style.display="none"; }
+
+  const showErr = (sel,msg)=>{ const e=$(sel); e.textContent=msg; e.classList.add("show"); };
+  $("#li-go").onclick = async () => {
+    $("#li-err").classList.remove("show"); $("#li-go").disabled = true;
+    try{
+      const d = await api("/api/auth/login", {method:"POST", body: JSON.stringify({email: $("#li-email").value.trim(), password: $("#li-pass").value})});
+      saveAuth(d); enterApp();
+    }catch(e){ showErr("#li-err", e.message); } finally { $("#li-go").disabled=false; }
+  };
+  $("#li-pass").addEventListener("keydown", e => { if(e.key==="Enter") $("#li-go").click(); });
+  $("#cl-go").onclick = async () => {
+    $("#cl-err").classList.remove("show"); $("#cl-go").disabled = true;
+    try{
+      const d = await api("/api/auth/claim", {method:"POST", body: JSON.stringify({
+        college_slug: $("#cl-college").value.trim(), roll_no: $("#cl-roll").value.trim(),
+        activation_code: $("#cl-code").value.trim(), password: $("#cl-pass").value})});
+      saveAuth(d); toast("Account created — welcome!"); enterApp();
+    }catch(e){ showErr("#cl-err", e.message); } finally { $("#cl-go").disabled=false; }
+  };
+}
+
+/* ============================== app shell ============================== */
+const STAFF_NAV = [
+  ["#/dashboard","D","Dashboard"], ["#/students","R","Students"],
+  ["#/import","↥","Import roster"], ["#/companies","C","Companies"],
+];
+const STUDENT_NAV = [ ["#/home","H","My placements"], ["#/companies","C","Drives"] ];
+
+function Shell(contentHTML, active){
+  const isStaff = ["owner","admin","sub_admin"].includes(AUTH.role);
+  const nav = (isStaff ? STAFF_NAV : STUDENT_NAV).map(([h,ic,l]) =>
+    `<a href="${h}" class="${h===active?'on':''}"><span class="ic">${ic}</span>${l}</a>`).join("");
+  root.innerHTML = `
+  <div class="shell">
+    <aside class="side">
+      <a class="brand" href="/"><span class="dot"></span>Cohort</a>
+      <nav class="nav">${nav}</nav>
+      <div class="spacer"></div>
+      <div class="userbox">
+        <div style="font-weight:600">${esc(AUTH.user?.full_name || "—")}</div>
+        <div class="em">${esc(AUTH.user?.email || "")}</div>
+        <div style="margin:8px 0"><span class="chip mut">${esc(AUTH.role)}</span></div>
+        <button class="btn btn-ghost" style="width:100%;color:#fff;border-color:rgba(255,255,255,.25)" onclick="signOut()">Sign out</button>
+      </div>
+    </aside>
+    <main class="main">${contentHTML}</main>
+  </div>`;
+}
+
+/* =============================== views ================================ */
+async function DashboardView(){
+  Shell(`<div class="page-h"><h1>Dashboard</h1><span class="crumb" id="cname"></span></div>
+    <div class="stat-row" id="stats"></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">Pipeline · all active drives</div><div id="funnel"></div></div>
+      <div class="panel"><div class="panel-t">Drives by outcome</div><table><thead><tr><th>Company</th><th>Tier</th><th>Registered</th><th>Placed</th></tr></thead><tbody id="drv"></tbody></table></div>
+    </div>`, "#/dashboard");
+  try{
+    const me = await api("/api/auth/me"); $("#cname").textContent = me.college?.name || "";
+    const d = await api("/api/dashboard/stats");
+    const t = d.totals;
+    $("#stats").innerHTML = [["Students",t.students],["Companies",t.companies],["Applications",t.applications],
+      ["Placed",`${t.placed} <small>${d.placement_rate}%</small>`]]
+      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+    const mx = Math.max(...d.funnel.map(f=>f.count),1);
+    $("#funnel").innerHTML = d.funnel.map(f=>`<div class="fn"><span class="lbl">${ROUND_LABELS[f.round]||f.round}</span><div class="track"><div class="fill" style="width:0" data-w="${(f.count/mx*100).toFixed(0)}"></div></div><span class="n">${f.count}</span></div>`).join("");
+    requestAnimationFrame(()=>document.querySelectorAll("#funnel .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
+    const cs = await api("/api/companies");
+    $("#drv").innerHTML = cs.map(c=>`<tr><td>${esc(c.name)}</td><td><span class="chip ${c.category==='tier1'?'t1':'t2'}">${esc(c.category||'—')}</span></td><td class="mono">${c.registered}</td><td class="mono">${c.placed}</td></tr>`).join("") || `<tr><td colspan="4" class="empty">No drives yet</td></tr>`;
+  }catch(e){ toast(e.message); }
+}
+
+async function StudentsView(){
+  Shell(`<div class="page-h"><h1>Students</h1><a class="btn btn-primary" href="#/import">Import roster</a></div>
+    <div class="panel">
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="Search roll no, name, or email…">
+        <button class="btn btn-ghost" id="codes">Download unclaimed activation codes</button>
+      </div>
+      <table><thead><tr><th>Roll no</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Login</th></tr></thead><tbody id="rows"></tbody></table>
+    </div>`, "#/students");
+  const load = async q => {
+    try{
+      const rows = await api("/api/admin/students" + (q ? "?q="+encodeURIComponent(q) : ""));
+      $("#rows").innerHTML = rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td><td><span class="chip mut">${esc(r.branch)}</span></td><td class="mono">${r.cgpa ?? "—"}</td><td>${r.has_login?'<span class="chip ok">active</span>':'<span class="chip warn">not claimed</span>'}</td></tr>`).join("")
+        || `<tr><td colspan="5"><div class="empty"><b>No students yet</b>Import your roster CSV to get started.</div></td></tr>`;
+    }catch(e){ toast(e.message); }
+  };
+  load();
+  let deb; $("#q").addEventListener("input", e => { clearTimeout(deb); deb=setTimeout(()=>load(e.target.value.trim()), 280); });
+  $("#codes").onclick = async () => {
+    try{
+      const rows = await api("/api/admin/students/activation-codes");
+      if (!rows.length) return toast("Every imported student has already claimed their account.");
+      const csv = "roll_no,full_name,email,branch,activation_code\n" +
+        rows.map(r=>[r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+      a.download = "activation-codes.csv"; a.click(); URL.revokeObjectURL(a.href);
+    }catch(e){ toast(e.message); }
+  };
+}
+
+function ImportView(){
+  Shell(`<div class="page-h"><h1>Import roster</h1><span class="crumb">CSV · UTF-8</span></div>
+    <div class="panel">
+      <div class="drop" id="drop"><b>Drop your roster CSV here</b>or click to choose a file
+        <input type="file" id="file" accept=".csv,text/csv" style="display:none"></div>
+      <p class="note">Required columns: <code>roll_no</code> <code>email</code> <code>full_name</code> <code>branch_code</code> — optional: <code>cgpa</code> <code>backlogs</code> <code>activation_code</code>.
+      Unknown branch codes are created automatically. Existing roll numbers are skipped, never overwritten.</p>
+      <div id="out"></div>
+    </div>`, "#/import");
+  const drop = $("#drop"), file = $("#file");
+  drop.onclick = () => file.click();
+  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+  drop.addEventListener("drop", e => { if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
+  file.onchange = () => { if (file.files[0]) upload(file.files[0]); };
+
+  async function upload(f){
+    $("#out").innerHTML = `<p class="note">Uploading ${esc(f.name)}…</p>`;
+    const fd = new FormData(); fd.append("file", f);
+    try{
+      const r = await api("/api/admin/students/import", {method:"POST", body: fd});
+      let html = `<div class="result-summary">
+        <div class="pill good"><b>${r.imported}</b>imported</div>
+        <div class="pill mid"><b>${r.skipped_existing}</b>already existed</div>
+        <div class="pill ${r.errors.length?'bad':'good'}"><b>${r.errors.length}</b>rows with errors</div>
+      </div>`;
+      if (r.created_branches.length) html += `<p class="note">Created new branches: ${r.created_branches.map(esc).join(", ")}</p>`;
+      if (r.errors.length) html += `<ul class="errlist">${r.errors.map(e=>`<li>Row ${e.row}: ${esc(e.error)}</li>`).join("")}</ul>`;
+      if (r.activation_codes.length){
+        html += `<p class="note" style="margin-top:16px">Each imported student got an activation code. Download and distribute them — this list is also available any time from the Students page.</p>
+        <button class="btn btn-primary" id="dl" style="margin-top:10px">Download ${r.activation_codes.length} activation codes (CSV)</button>`;
+      }
+      $("#out").innerHTML = html;
+      if (r.activation_codes.length) $("#dl").onclick = () => {
+        const csv = "roll_no,full_name,email,activation_code\n" +
+          r.activation_codes.map(c=>[c.roll_no,c.full_name,c.email,c.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+        a.download="activation-codes.csv"; a.click(); URL.revokeObjectURL(a.href);
+      };
+      toast(`Imported ${r.imported} students`);
+    }catch(e){ $("#out").innerHTML = `<div class="err show">${esc(e.message)}</div>`; }
+  }
+}
+
+async function CompaniesView(){
+  Shell(`<div class="page-h"><h1>${["owner","admin","sub_admin"].includes(AUTH.role)?"Companies":"Drives"}</h1></div>
+    <div class="panel"><table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Eligible branches</th><th>Registered</th><th>Placed</th></tr></thead><tbody id="rows"></tbody></table></div>`, "#/companies");
+  try{
+    const cs = await api("/api/companies");
+    $("#rows").innerHTML = cs.map(c=>`<tr><td>${esc(c.name)}</td>
+      <td><span class="chip ${c.category==='tier1'?'t1':'t2'}">${esc(c.category||'—')}</span></td>
+      <td class="mono">${money(c.package)}</td>
+      <td>${(c.eligible_branches||[]).map(b=>`<span class="chip mut">${esc(b)}</span>`).join(" ")}</td>
+      <td class="mono">${c.registered}</td><td class="mono">${c.placed}</td></tr>`).join("")
+      || `<tr><td colspan="6"><div class="empty"><b>No drives yet</b>Companies your placement cell posts will appear here.</div></td></tr>`;
+  }catch(e){ toast(e.message); }
+}
+
+async function StudentHomeView(){
+  Shell(`<div class="page-h"><h1>My placements</h1><span class="crumb" id="cname"></span></div>
+    <div class="panel"><div class="panel-t">My applications</div>
+    <table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Current stage</th><th>Status</th></tr></thead><tbody id="apps"></tbody></table></div>`, "#/home");
+  try{
+    const me = await api("/api/auth/me"); $("#cname").textContent = me.college?.name || "";
+    const apps = await api("/api/me/applications");
+    $("#apps").innerHTML = apps.map(a=>`<tr><td>${esc(a.company)}</td>
+      <td><span class="chip ${a.category==='tier1'?'t1':'t2'}">${esc(a.category||'—')}</span></td>
+      <td class="mono">${money(a.package)}</td>
+      <td>${ROUND_LABELS[a.current_round]||esc(a.current_round)}</td>
+      <td>${a.status==='placed'?'<span class="chip ok">placed</span>':a.status==='rejected'?'<span class="chip warn">not selected</span>':'<span class="chip mut">in progress</span>'}</td></tr>`).join("")
+      || `<tr><td colspan="5"><div class="empty"><b>No applications yet</b>Register for a drive from the Drives page when one opens.</div></td></tr>`;
+  }catch(e){ toast(e.message); }
+}
+
+/* =============================== router ================================ */
+const ROUTES = {
+  "#/login": LoginView, "#/dashboard": DashboardView, "#/students": StudentsView,
+  "#/import": ImportView, "#/companies": CompaniesView, "#/home": StudentHomeView,
+};
+function enterApp(){ location.hash = ["owner","admin","sub_admin"].includes(AUTH.role) ? "#/dashboard" : "#/home"; render(); }
+function render(){
+  const isStaff = AUTH && ["owner","admin","sub_admin"].includes(AUTH.role);
+  let h = location.hash || "";
+  if (!AUTH) h = "#/login";
+  else if (!ROUTES[h] || h === "#/login") h = isStaff ? "#/dashboard" : "#/home";
+  else if (!isStaff && ["#/dashboard","#/students","#/import"].includes(h)) h = "#/home";
+  if (location.hash !== h) { location.hash = h; return; }
+  ROUTES[h]();
+}
+window.addEventListener("hashchange", render);
+(async () => {
+  try { CFG = await api("/api/auth/config"); } catch { /* backend down: password form still renders */ }
+  render();
+})();
+</script>
+</body>
+</html>

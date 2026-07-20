@@ -1,0 +1,22 @@
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# API -> FastAPI backend
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# the product app
+	handle /app {
+		root * /srv/frontend
+		rewrite * /app.html
+		file_server
+	}
+
+	# everything else -> the static POC site
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}

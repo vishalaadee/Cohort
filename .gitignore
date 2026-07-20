@@ -1,0 +1,33 @@
+# ---- secrets (NEVER commit these) ----
+.env
+*.pem
+*.key
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ---- Node (future React build) ----
+node_modules/
+.next/
+.turbo/
+
+# ---- IDE ----
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---- Docker ----
+docker-compose.override.yml
+
+# ---- OS ----
+*.log
+*.pid
