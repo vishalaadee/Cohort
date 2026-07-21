@@ -22,7 +22,6 @@ from sqlalchemy import text
 
 from ..auth import Claims, get_claims
 from ..db import tenant_connection
-from ..permissions import require_cr_capability, require_placement_officer, require_staff
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -31,16 +30,17 @@ MAX_ROWS = 5000
 
 
 def _require_staff(claims: Claims):
-    require_staff(claims)
-
-
-def _require_placement_officer(claims: Claims):
-    require_placement_officer(claims)
+    if claims.role not in ("owner", "admin", "sub_admin"):
+        raise HTTPException(403, "Placement-cell access required")
+    if claims.role != "owner" and not claims.college_id:
+        raise HTTPException(403, "No college scope on this account")
 
 
 @router.post("/students/import")
 async def import_students(file: UploadFile, claims: Claims = Depends(get_claims)):
-    _require_placement_officer(claims)
+    _require_staff(claims)
+    if claims.role == "sub_admin":
+        raise HTTPException(403, "Only the placement officer (admin) can import the roster")
 
     raw = await file.read()
     try:
@@ -126,7 +126,7 @@ async def import_students(file: UploadFile, claims: Claims = Depends(get_claims)
 @router.get("/students/activation-codes")
 def unclaimed_codes(claims: Claims = Depends(get_claims)):
     """Codes for students who haven't claimed yet — for (re)distribution."""
-    require_cr_capability(claims, "view_activation_codes")
+    _require_staff(claims)
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT s.roll_no, s.full_name, s.email, s.activation_code, b.code AS branch
@@ -141,7 +141,7 @@ def unclaimed_codes(claims: Claims = Depends(get_claims)):
 def list_students(q: str | None = None, claims: Claims = Depends(get_claims)):
     """Tenant-scoped roster. RLS trims this to the caller's college (admin)
     or branch (sub_admin) automatically."""
-    require_cr_capability(claims, "view_branch_roster")
+    _require_staff(claims)
     where, params = "", {}
     if q:
         where = "WHERE s.roll_no ILIKE :q OR s.full_name ILIKE :q OR s.email ILIKE :q"

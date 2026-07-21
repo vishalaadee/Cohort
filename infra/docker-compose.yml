@@ -14,9 +14,6 @@ services:
       - db-data:/var/lib/postgresql/data
       # *.sql here run once, in order, on first boot (as the superuser)
       - ./backend/db-init:/docker-entrypoint-initdb.d:ro
-      # Keep a fresh local database at the same tracked migration version as RDS.
-      - ../migrations:/migrations:ro
-      - ../scripts:/scripts:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPER_USER} -d ${POSTGRES_DB}"]
       interval: 5s

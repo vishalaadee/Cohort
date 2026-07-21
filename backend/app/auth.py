@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import jwt
-from fastapi import Header, HTTPException
+from fastapi import Header
 
 from .config import settings
 
@@ -46,7 +46,7 @@ def get_claims(
                 user_id=_int_or_none(payload.get("user_id")),
             )
         except jwt.PyJWTError:
-            raise HTTPException(401, "Your session is invalid or has expired. Please sign in again.")
+            pass  # fall through to dev fallback
 
     if settings.dev_fallback:
         return Claims(
@@ -56,6 +56,6 @@ def get_claims(
             user_id=_int_or_none(x_demo_user),
         )
 
-    # Never turn a missing/invalid session into an apparently successful empty
-    # data response. The client can now distinguish sign-in from no results.
-    raise HTTPException(401, "Sign in to continue.")
+    # Once dev_fallback is off, unauthenticated requests get an empty scope,
+    # and RLS then returns zero rows for everything.
+    return Claims(role="", college_id=None)

@@ -7,36 +7,6 @@ from .config import settings
 # pool_pre_ping avoids handing out a dead connection after a DB restart.
 engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
 
-# Every public API route is held behind this guard at startup. Keeping this
-# explicit prevents a partially upgraded database from generating a cascade of
-# misleading 500s. Apply the tracked migrations instead of adding columns by
-# hand when it reports false.
-REQUIRED_SCHEMA_OBJECTS = (
-    "public.attribute_defs",
-    "public.resumes",
-    "public.edit_requests",
-    "public.questions",
-    "public.company_notes",
-    "public.notifications",
-)
-
-
-def schema_is_current() -> bool:
-    try:
-        with engine.connect() as conn:
-            for object_name in REQUIRED_SCHEMA_OBJECTS:
-                if conn.execute(text("SELECT to_regclass(:name)"), {"name": object_name}).scalar() is None:
-                    return False
-            required_columns = conn.execute(text("""
-                SELECT count(*)
-                FROM information_schema.columns
-                WHERE table_schema = 'public' AND table_name = 'colleges'
-                  AND column_name = 'placement_policy'
-            """)).scalar()
-            return required_columns == 1
-    except Exception:
-        return False
-
 
 @contextmanager
 def tenant_connection(claims):

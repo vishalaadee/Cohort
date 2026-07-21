@@ -3,7 +3,6 @@ from sqlalchemy import text
 
 from ..auth import Claims, get_claims
 from ..db import tenant_connection
-from ..permissions import require_cr_capability
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
@@ -18,7 +17,6 @@ ROUNDS = [
 def dashboard_stats(claims: Claims = Depends(get_claims)):
     """Everything here is tenant-scoped by RLS — the same code serves every
     college, and each caller only ever sees their own rows."""
-    require_cr_capability(claims, "view_branch_dashboard")
     with tenant_connection(claims) as conn:
         totals = conn.execute(text("""
             SELECT
@@ -42,5 +40,4 @@ def dashboard_stats(claims: Claims = Depends(get_claims)):
         "totals": dict(totals),
         "placement_rate": placement_rate,
         "funnel": [{"round": r, "count": by_round.get(r, 0)} for r in ROUNDS],
-        "scope": "branch" if claims.role == "sub_admin" else "college",
     }
