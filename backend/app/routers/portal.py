@@ -273,9 +273,6 @@ def browse_feedback(claims: Claims = Depends(get_claims)):
             FROM feedback f JOIN companies c ON c.id=f.company_id
             ORDER BY f.created_at DESC LIMIT 200""")).mappings().all()
     return [dict(r) for r in rows]
-<<<<<<< Updated upstream
-=======
-
 
 # ============================ consent ======================================
 @router.post("/consent")
