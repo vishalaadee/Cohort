@@ -273,3 +273,76 @@ def browse_feedback(claims: Claims = Depends(get_claims)):
             FROM feedback f JOIN companies c ON c.id=f.company_id
             ORDER BY f.created_at DESC LIMIT 200""")).mappings().all()
     return [dict(r) for r in rows]
+<<<<<<< Updated upstream
+=======
+
+
+# ============================ consent ======================================
+@router.post("/consent")
+def update_consent(payload: dict, claims: Claims = Depends(get_claims)):
+    """Opt in/out of recruiter profile sharing. Revocable anytime."""
+    if claims.role != "student": raise HTTPException(403, "Student account required")
+    share = bool(payload.get("share"))
+    with tenant_connection(claims) as conn:
+        conn.execute(text("""
+            UPDATE students SET consent_recruiter_share = :s, consent_updated_at = now()
+            WHERE user_id = :u"""), {"s": share, "u": claims.user_id})
+    return {"consent_recruiter_share": share}
+
+
+@router.get("/consent")
+def get_consent(claims: Claims = Depends(get_claims)):
+    if claims.role != "student": raise HTTPException(403, "Student account required")
+    with tenant_connection(claims) as conn:
+        r = conn.execute(text("""
+            SELECT consent_recruiter_share, consent_updated_at
+            FROM students WHERE user_id = :u"""), {"u": claims.user_id}).mappings().first()
+    return dict(r) if r else {"consent_recruiter_share": False}
+
+
+# ======================== coding profiles ==================================
+@router.put("/coding-profiles")
+def save_coding_profiles(payload: dict, claims: Claims = Depends(get_claims)):
+    """Save coding profile handles. Verification happens async (or on-demand)."""
+    if claims.role != "student": raise HTTPException(403, "Student account required")
+    import json
+    allowed_keys = {"codeforces", "codechef", "leetcode", "github"}
+    clean = {}
+    for k in allowed_keys:
+        if k in payload and payload[k]:
+            handle = str(payload[k].get("handle", "")).strip()
+            if handle:
+                clean[k] = {"handle": handle, "verified": False}
+    with tenant_connection(claims) as conn:
+        conn.execute(text("""
+            UPDATE students SET coding_profiles = CAST(:p AS jsonb)
+            WHERE user_id = :u"""), {"p": json.dumps(clean), "u": claims.user_id})
+    return {"saved": True, "profiles": clean}
+
+
+# ============================ score ========================================
+@router.get("/score")
+def my_score(claims: Claims = Depends(get_claims)):
+    """Compute and return the Cohort Score. Always visible to the student."""
+    if claims.role != "student": raise HTTPException(403, "Student account required")
+    from ..scoring import compute_score
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("""
+            SELECT s.cgpa, s.backlogs, s.coding_profiles, s.attributes,
+                   s.consent_recruiter_share,
+                   (SELECT 1 FROM resumes r WHERE r.student_id=s.id) IS NOT NULL AS has_resume,
+                   coalesce(extract(day FROM now() - (SELECT r.updated_at FROM resumes r WHERE r.student_id=s.id)), 999) AS resume_age_days,
+                   (SELECT count(*) FROM applications a WHERE a.student_id=s.id) AS applications_count,
+                   (SELECT count(*) FROM feedback f WHERE f.student_id=s.id) AS feedback_count,
+                   (SELECT count(*) FROM questions q WHERE q.student_id=s.id) AS questions_count
+            FROM students s WHERE s.user_id = :u
+        """), {"u": claims.user_id}).mappings().first()
+    if not row: raise HTTPException(404, "No roster record linked")
+    score = compute_score(dict(row))
+    # persist for the recruiter view
+    import json
+    with tenant_connection(claims) as conn:
+        conn.execute(text("UPDATE students SET cohort_score = CAST(:s AS jsonb) WHERE user_id = :u"),
+                     {"s": json.dumps(score), "u": claims.user_id})
+    return {**score, "consent_recruiter_share": row["consent_recruiter_share"]}
+>>>>>>> Stashed changes

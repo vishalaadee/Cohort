@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Cohort placement platform — complete infra stack.
+  Creates: VPC security groups, RDS Postgres (free tier), EC2 with Docker,
+  Elastic IP. One command to create, one to destroy. Zero bill on free tier.
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 key pair name for SSH access
+  MyIP:
+    Type: String
+    Description: Your laptop's public IP for SSH (e.g. 203.0.113.42/32)
+    AllowedPattern: '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/32$'
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: RDS master password (min 8 chars, store it safely)
+  JWTSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: JWT signing secret (random 32+ char string)
+  GitHubRepo:
+    Type: String
+    Default: https://github.com/vishalaadee/Cohort.git
+    Description: Git repo URL to clone on the EC2 instance
+
+Resources:
+  # -------- Security groups --------
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cohort EC2 — HTTP, HTTPS, SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIP
+          Description: SSH from your laptop only
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP (Caddy upgrades to HTTPS)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS
+      Tags:
+        - Key: Project
+          Value: cohort
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cohort RDS — Postgres from EC2 only
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+          Description: Postgres from EC2 only
+      Tags:
+        - Key: Project
+          Value: cohort
+
+  # -------- RDS (free tier) --------
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: postgres
+      EngineVersion: '16'
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      StorageType: gp2
+      MaxAllocatedStorage: 20                  # autoscaling OFF
+      MultiAZ: false
+      PubliclyAccessible: false
+      DBName: placement
+      MasterUsername: cohort_admin
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups:
+        - !GetAtt DBSecurityGroup.GroupId
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      Tags:
+        - Key: Project
+          Value: cohort
+
+  # -------- EC2 (free tier) --------
+  AppInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionAMI, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AppSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: cohort-app
+        - Key: Project
+          Value: cohort
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euo pipefail
+          exec > /var/log/cohort-init.log 2>&1
+
+          # --- system ---
+          apt-get update -qq
+          apt-get install -y -qq docker.io docker-compose-v2 postgresql-client git
+          systemctl enable docker && systemctl start docker
+          usermod -aG docker ubuntu
+
+          # --- clone + configure ---
+          cd /home/ubuntu
+          sudo -u ubuntu git clone ${GitHubRepo} Cohort
+          cd Cohort
+
+          # write .env from CFN parameters (no secrets in git)
+          cat > .env <<ENVEOF
+          DATABASE_URL=postgresql+psycopg://app_user:appuserpass@${Database.Endpoint.Address}:5432/placement
+          RDS_HOST=${Database.Endpoint.Address}
+          RDS_MASTER_USER=cohort_admin
+          RDS_MASTER_PASSWORD=${DBPassword}
+          JWT_SECRET=${JWTSecret}
+          DEV_FALLBACK=false
+          ENVEOF
+          chmod 600 .env
+
+          # --- apply schema to RDS ---
+          export PGPASSWORD='${DBPassword}'
+          until pg_isready -h ${Database.Endpoint.Address} -U cohort_admin -d placement -t 5; do
+            echo "waiting for RDS..."; sleep 10
+          done
+
+          psql -h ${Database.Endpoint.Address} -U cohort_admin -d placement \
+            -f backend/db-init/01-schema.sql
+
+          # create non-superuser app_user
+          psql -h ${Database.Endpoint.Address} -U cohort_admin -d placement <<SQL
+          DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='app_user') THEN
+              CREATE ROLE app_user LOGIN PASSWORD 'appuserpass';
+            END IF;
+          END \$\$;
+          GRANT USAGE ON SCHEMA public TO app_user;
+          GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+          GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO app_user;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE,SELECT ON SEQUENCES TO app_user;
+          SQL
+
+          # seed demo data
+          psql -h ${Database.Endpoint.Address} -U cohort_admin -d placement \
+            -f backend/db-init/03-seed.sql || true
+
+          # apply migrations
+          for f in migrations/*.sql; do
+            psql -h ${Database.Endpoint.Address} -U cohort_admin -d placement -f "$f" || true
+          done
+
+          # grant new tables to app_user
+          psql -h ${Database.Endpoint.Address} -U cohort_admin -d placement <<SQL
+          GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+          GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+          SQL
+
+          unset PGPASSWORD
+
+          # --- start the stack ---
+          cd infra
+          docker compose -f docker-compose.aws.yml up -d --build
+
+          echo "=== Cohort deployment complete ==="
+
+  # -------- Elastic IP --------
+  AppEIP:
+    Type: AWS::EIP
+    Properties:
+      InstanceId: !Ref AppInstance
+      Tags:
+        - Key: Project
+          Value: cohort
+
+# -------- Ubuntu 24.04 LTS AMIs (free-tier eligible, x86_64) --------
+Mappings:
+  RegionAMI:
+    ap-south-1:
+      AMI: ami-0dee22c13ea7a9a67    # Ubuntu 24.04 LTS Mumbai
+    ap-south-2:
+      AMI: ami-0dee22c13ea7a9a67    # fallback
+    us-east-1:
+      AMI: ami-0c7217cdde317cfec    # Ubuntu 24.04 LTS Virginia
+    us-west-2:
+      AMI: ami-03f65b8614a860c29    # Ubuntu 24.04 LTS Oregon
+    eu-west-1:
+      AMI: ami-0932dacac40f09e09    # Ubuntu 24.04 LTS Ireland
+
+Outputs:
+  AppPublicIP:
+    Description: Elastic IP — your live URL
+    Value: !Ref AppEIP
+  RDSEndpoint:
+    Description: RDS hostname (for DBeaver SSH tunnel)
+    Value: !GetAtt Database.Endpoint.Address
+  SSHCommand:
+    Description: SSH into the EC2 instance
+    Value: !Sub 'ssh -i ${KeyPairName}.pem ubuntu@${AppEIP}'
+  AppURL:
+    Description: Open this in your browser
+    Value: !Sub 'http://${AppEIP}'
+  DBeaver:
+    Description: DBeaver SSH tunnel → RDS
+    Value: !Sub 'SSH host: ${AppEIP} | DB host: ${Database.Endpoint.Address}:5432 | DB: placement'
