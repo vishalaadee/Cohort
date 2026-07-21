@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8">
+<title>Cohort — next version previews</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root[data-theme=dark]{--bg:#0A0E1E;--panel:#121730;--panel2:#171D3B;--ink:#EDEFFB;--mut:#8C94B8;--line:#232B52;--line2:#2E3868;--acc:#8B7BFF;--acc-ink:#0A0E1E;--acc-soft:rgba(139,123,255,.16);--mint:#2EE6A8;--mint-soft:rgba(46,230,168,.14);--amber:#F5B857;--amber-soft:rgba(245,184,87,.14);--rose:#FF7590;--rose-soft:rgba(255,117,144,.12);--lime:#C6F35F;--side:#0D1226}
+:root[data-theme=light]{--bg:#F5F6FC;--panel:#fff;--panel2:#FAFBFF;--ink:#12172E;--mut:#5E6684;--line:#E6E9F5;--line2:#D4D9EC;--acc:#6C5CF7;--acc-ink:#fff;--acc-soft:rgba(108,92,247,.10);--mint:#10B981;--mint-soft:rgba(16,185,129,.12);--amber:#E8A23B;--amber-soft:rgba(232,162,59,.14);--rose:#E4506A;--rose-soft:rgba(228,80,106,.10);--lime:#9BE33B;--side:#10142B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter;background:var(--bg);color:var(--ink);line-height:1.5}
+h1,h2,h3,.disp{font-family:"Bricolage Grotesque";letter-spacing:-.02em}
+.mono{font-family:"IBM Plex Mono"}
+.screen{width:1180px;margin:40px auto;background:var(--bg);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque";font-weight:800;font-size:18px}
+.brand .dot{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--acc),#9F5CF7);position:relative}
+.brand .dot::after{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;border-radius:50%;background:var(--lime)}
+.chip{font-family:"IBM Plex Mono";font-size:11px;padding:3px 10px;border-radius:999px}
+.chip.next{background:var(--acc-soft);color:var(--acc)}
+.chip.ok{background:var(--mint-soft);color:var(--mint)}
+.chip.warn{background:var(--amber-soft);color:var(--amber)}
+.chip.bad{background:var(--rose-soft);color:var(--rose)}
+.chip.gray{background:rgba(140,148,184,.15);color:var(--mut)}
+.body{padding:26px;display:grid;gap:18px}
+.g2{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.panel .t{font-family:"Bricolage Grotesque";font-weight:700;font-size:15px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.btn{font-weight:600;font-size:13.5px;border-radius:10px;padding:9px 15px;border:1px solid transparent;display:inline-flex;gap:7px;align-items:center}
+.btn-p{background:var(--acc);color:var(--acc-ink)}
+.btn-g{border-color:var(--line2);color:var(--ink)}
+.big{font-family:"Bricolage Grotesque";font-weight:800}
+.bar{display:grid;grid-template-columns:130px 1fr 44px;gap:10px;align-items:center;margin:7px 0}
+.bar .l{font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
+.bar .tr{height:8px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar .f{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--acc),#A78BFA)}
+.bar .f.m{background:linear-gradient(90deg,var(--mint),#7CF2C8)}
+.bar .f.a{background:linear-gradient(90deg,var(--amber),#FCD34D)}
+.bar .n{font-family:"IBM Plex Mono";font-size:12px;text-align:right}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.kv:last-child{border:0}
+.kv .k{color:var(--mut)}
+.item{border-bottom:1px solid var(--line);padding:12px 0}
+.item:last-child{border:0}
+.score-ring{width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--mint) 0 78%,var(--line) 78% 100%);display:grid;place-items:center;margin:6px auto}
+.score-ring .in{width:118px;height:118px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center}
+.tag{display:inline-block;font-size:12px;padding:4px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);margin:3px 3px 0 0}
+.avatar{width:38px;height:38px;border-radius:12px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;font-weight:700;font-family:"Bricolage Grotesque";flex:none}
+.row{display:flex;gap:12px;align-items:center}
+.mock-note{max-width:1180px;margin:0 auto;padding:0 4px;font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
+td,th{font-size:13px;text-align:left;padding:9px 10px 9px 0;border-bottom:1px solid var(--line)}
+th{font-family:"IBM Plex Mono";font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+table{width:100%;border-collapse:collapse}
+.rank{font-family:"IBM Plex Mono";font-weight:600;color:var(--acc)}
+</style></head><body>
+
+<!-- 1 · RESUME SCORER -->
+<div class="screen" id="scorer">
+  <div class="topbar"><span class="brand"><span class="dot"></span>Cohort</span><span><span class="chip next">NEXT VERSION</span> <span class="chip gray">Resume scorer</span></span></div>
+  <div class="body">
+    <div class="g2">
+      <div class="panel"><div class="t">Your resume vs the Zentrix JD <span class="chip ok">scored just now</span></div>
+        <div class="score-ring"><div class="in"><div><div class="big" style="font-size:34px">78</div><div class="mono" style="font-size:11px;color:var(--mut)">JD MATCH</div></div></div></div>
+        <div class="bar"><span class="l">Skills match</span><div class="tr"><div class="f m" style="width:84%"></div></div><span class="n">84</span></div>
+        <div class="bar"><span class="l">Projects</span><div class="tr"><div class="f" style="width:72%"></div></div><span class="n">72</span></div>
+        <div class="bar"><span class="l">Keywords</span><div class="tr"><div class="f a" style="width:61%"></div></div><span class="n">61</span></div>
+        <div class="bar"><span class="l">Format &amp; ATS</span><div class="tr"><div class="f m" style="width:92%"></div></div><span class="n">92</span></div>
+      </div>
+      <div class="panel"><div class="t">Fix these first</div>
+        <div class="item"><span class="chip bad">missing</span> <b style="font-size:13.5px"> SQL appears 4× in the JD, 0× in your resume</b>
+          <div style="font-size:12.5px;color:var(--mut);margin-top:3px">Your DBMS coursework counts — name the tech explicitly.</div></div>
+        <div class="item"><span class="chip warn">weak</span> <b style="font-size:13.5px"> Project impact has no numbers</b>
+          <div style="font-size:12.5px;color:var(--mut);margin-top:3px">"Built an app" → "Built an app used by 300+ students, cut queue time 40%".</div></div>
+        <div class="item"><span class="chip warn">weak</span> <b style="font-size:13.5px"> Internship bullet is passive</b>
+          <div style="font-size:12.5px;color:var(--mut);margin-top:3px">Lead with the verb: Shipped, Automated, Reduced.</div></div>
+        <div style="margin-top:12px;display:flex;gap:10px"><span class="btn btn-p">Re-score after edits</span><span class="btn btn-g">Download report</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="mock-note">01 · resume-scorer — per-JD scoring with actionable fixes, not just a number</p>
+
+<!-- 2 · MOCK TESTS + CONTESTS -->
+<div class="screen" id="tests">
+  <div class="topbar"><span class="brand"><span class="dot"></span>Cohort</span><span><span class="chip next">NEXT VERSION</span> <span class="chip gray">Mock tests &amp; contests</span></span></div>
+  <div class="body">
+    <div class="g3">
+      <div class="panel"><div class="t">Aptitude sprint <span class="chip ok">live</span></div>
+        <div class="kv"><span class="k">Pattern</span><span>Zentrix OA style</span></div>
+        <div class="kv"><span class="k">Duration</span><span>45 min · 30 Qs</span></div>
+        <div class="kv"><span class="k">Attempted</span><span>412 students</span></div>
+        <div style="margin-top:12px"><span class="btn btn-p">Start test</span></div></div>
+      <div class="panel"><div class="t">DSA contest #7 <span class="chip warn">starts 6:00 PM</span></div>
+        <div class="kv"><span class="k">Problems</span><span>4 · CF Div-2 style</span></div>
+        <div class="kv"><span class="k">Prize</span><span>Top 10 → referral pool</span></div>
+        <div class="kv"><span class="k">Registered</span><span>238</span></div>
+        <div style="margin-top:12px"><span class="btn btn-g">Register</span></div></div>
+      <div class="panel"><div class="t">Your percentile</div>
+        <div class="big" style="font-size:38px;color:var(--mint)">P91</div>
+        <div style="font-size:12.5px;color:var(--mut)">across 6 attempts · CSE cohort</div>
+        <div class="bar" style="margin-top:14px"><span class="l">Quant</span><div class="tr"><div class="f m" style="width:88%"></div></div><span class="n">88</span></div>
+        <div class="bar"><span class="l">DSA</span><div class="tr"><div class="f" style="width:76%"></div></div><span class="n">76</span></div>
+        <div class="bar"><span class="l">Verbal</span><div class="tr"><div class="f a" style="width:64%"></div></div><span class="n">64</span></div></div>
+    </div>
+    <div class="panel"><div class="t">Contest leaderboard <span class="chip gray">DSA #6 · final</span></div>
+      <table><tr><th>#</th><th>Student</th><th>Branch</th><th>Solved</th><th>Time</th><th>Rating Δ</th></tr>
+      <tr><td class="rank">1</td><td>Ananya Krishnan</td><td>CSE</td><td>4/4</td><td class="mono">51:20</td><td style="color:var(--mint)">+42</td></tr>
+      <tr><td class="rank">2</td><td>Ritika Sharma</td><td>AIML</td><td>4/4</td><td class="mono">58:07</td><td style="color:var(--mint)">+37</td></tr>
+      <tr><td class="rank">3</td><td>Aditya Verma</td><td>ISE</td><td>3/4</td><td class="mono">44:11</td><td style="color:var(--mint)">+29</td></tr></table></div>
+  </div>
+</div>
+<p class="mock-note">02 · mock-tests-contests — company-pattern tests, rated contests, cohort percentiles</p>
+
+<!-- 3 · ALUMNI REFERRALS + SESSIONS -->
+<div class="screen" id="alumni">
+  <div class="topbar"><span class="brand"><span class="dot"></span>Cohort</span><span><span class="chip next">NEXT VERSION</span> <span class="chip gray">Alumni network</span></span></div>
+  <div class="body">
+    <div class="g2">
+      <div class="panel"><div class="t">Referrals board <span class="chip ok">3 open</span></div>
+        <div class="item row"><span class="avatar">RK</span><div style="flex:1"><b style="font-size:14px">Rahul K · SDE-2 @ Zentrix</b> <span class="chip gray">'21 CSE</span>
+          <div style="font-size:12.5px;color:var(--mut)">Referring 3 for backend roles · needs: Go or Java, DSA strong</div></div>
+          <span class="btn btn-p" style="font-size:12.5px;padding:7px 12px">Apply for referral</span></div>
+        <div class="item row"><span class="avatar">SP</span><div style="flex:1"><b style="font-size:14px">Shreya P · Analyst @ BharatPay</b> <span class="chip gray">'22 ISE</span>
+          <div style="font-size:12.5px;color:var(--mut)">2 referrals · fintech interest, SQL + product sense</div></div>
+          <span class="btn btn-g" style="font-size:12.5px;padding:7px 12px">Apply</span></div>
+        <div class="item row"><span class="avatar">MN</span><div style="flex:1"><b style="font-size:14px">Manoj N · MLE @ CloudNine</b> <span class="chip gray">'20 CSE</span>
+          <div style="font-size:12.5px;color:var(--mut)">1 referral · portfolio with deployed ML project required</div></div>
+          <span class="btn btn-g" style="font-size:12.5px;padding:7px 12px">Apply</span></div>
+      </div>
+      <div class="panel"><div class="t">Sessions <span class="chip gray">à la Topmate — built in</span></div>
+        <div class="item"><div class="row" style="justify-content:space-between"><b style="font-size:14px">Mock interview: backend</b><span class="chip warn">₹299 · 40 min</span></div>
+          <div style="font-size:12.5px;color:var(--mut)">1:1 with Rahul K · 27 booked · ★ 4.9</div></div>
+        <div class="item"><div class="row" style="justify-content:space-between"><b style="font-size:14px">Resume teardown group</b><span class="chip ok">free · Sat 5 PM</span></div>
+          <div style="font-size:12.5px;color:var(--mut)">Shreya P · 140 seats · hosted on campus stream</div></div>
+        <div class="item"><div class="row" style="justify-content:space-between"><b style="font-size:14px">Path to ML roles</b><span class="chip warn">₹199 · webinar</span></div>
+          <div style="font-size:12.5px;color:var(--mut)">Manoj N · Q&amp;A + roadmap PDF</div></div>
+        <div style="margin-top:12px"><span class="btn btn-p">Host a session</span> <span style="font-size:12px;color:var(--mut);margin-left:8px">alumni keep 90% · college fund 10%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="mock-note">03 · alumni-referrals-sessions — referral board + paid/free sessions, revenue-share with the college</p>
+
+<!-- 4 · JD MATCH RANKING (admin) -->
+<div class="screen" id="jdmatch">
+  <div class="topbar"><span class="brand"><span class="dot"></span>Cohort</span><span><span class="chip next">NEXT VERSION</span> <span class="chip gray">JD match · admin</span></span></div>
+  <div class="body">
+    <div class="panel"><div class="t">Best-fit students for "Zentrix — Backend SDE" <span class="chip mono gray">JD parsed · 14 skills extracted</span></div>
+      <div style="margin-bottom:10px">
+        <span class="tag">Go</span><span class="tag">PostgreSQL</span><span class="tag">REST APIs</span><span class="tag">Docker</span><span class="tag">DSA</span><span class="tag">CGPA ≥ 8</span><span class="tag">+8 more</span></div>
+      <table>
+        <tr><th>#</th><th>Student</th><th>Branch</th><th>CGPA</th><th>Skill overlap</th><th>Projects</th><th>Match</th><th></th></tr>
+        <tr><td class="rank">1</td><td>Ananya Krishnan</td><td>CSE</td><td class="mono">9.35</td><td>Go, PG, Docker +5</td><td>2 backend</td>
+          <td><div class="tr" style="width:110px;height:8px;background:var(--line);border-radius:5px;display:inline-block"><div class="f m" style="width:94%;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--mint),#7CF2C8)"></div></div> <b class="mono">94</b></td>
+          <td><span class="chip ok">shortlist</span></td></tr>
+        <tr><td class="rank">2</td><td>Sanjay Kumar</td><td>CSE</td><td class="mono">8.42</td><td>PG, REST +4</td><td>1 backend</td>
+          <td><div class="tr" style="width:110px;height:8px;background:var(--line);border-radius:5px;display:inline-block"><div class="f m" style="width:81%;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--mint),#7CF2C8)"></div></div> <b class="mono">81</b></td>
+          <td><span class="chip ok">shortlist</span></td></tr>
+        <tr><td class="rank">3</td><td>Aditya Verma</td><td>ISE</td><td class="mono">8.90</td><td>REST, Docker +3</td><td>1 fullstack</td>
+          <td><div class="tr" style="width:110px;height:8px;background:var(--line);border-radius:5px;display:inline-block"><div class="f" style="width:74%;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--acc),#A78BFA)"></div></div> <b class="mono">74</b></td>
+          <td><span class="chip gray">review</span></td></tr>
+        <tr><td class="rank">4</td><td>Ritika Sharma</td><td>AIML</td><td class="mono">9.22</td><td>PG +2</td><td>ML-heavy</td>
+          <td><div class="tr" style="width:110px;height:8px;background:var(--line);border-radius:5px;display:inline-block"><div class="f a" style="width:62%;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--amber),#FCD34D)"></div></div> <b class="mono">62</b></td>
+          <td><span class="chip gray">review</span></td></tr>
+      </table>
+      <div style="margin-top:14px;display:flex;gap:10px"><span class="btn btn-p">Export shortlist for HR</span><span class="btn btn-g">Notify top 20</span></div>
+    </div>
+  </div>
+</div>
+<p class="mock-note">04 · jd-match — paste a JD, rank the whole roster by fit, one-click shortlist for the company</p>
+
+</body></html>

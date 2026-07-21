@@ -4,7 +4,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 from .db import engine
-from .routers import auth_routes, companies, dashboard, portal, students_admin
+from .routers import admin_extra, auth_routes, companies, dashboard, portal, students_admin
 
 app = FastAPI(title="Placement Platform API", version="0.1.0")
 
@@ -26,6 +26,7 @@ app.include_router(dashboard.router)
 app.include_router(companies.router)
 app.include_router(students_admin.router)
 app.include_router(portal.router)
+app.include_router(admin_extra.router)
 
 
 @app.get("/api/health")

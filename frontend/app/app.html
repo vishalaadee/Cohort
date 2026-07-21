@@ -1,120 +1,169 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cohort — sign in</title>
+<title>Cohort — your placement workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-:root{
-  --ink:#0E1B33; --paper:#F4F6FB; --panel:#FFFFFF;
-  --indigo:#3B4CC7; --indigo-dark:#2A3795; --indigo-soft:rgba(59,76,199,.08);
-  --gold:#E6A02C; --teal:#12968A; --rose:#C4485F;
-  --slate:#5B6788; --line:#E3E7F1; --line-strong:#CFD6E6;
-  --disp:"Bricolage Grotesque",sans-serif; --body:"Inter",sans-serif; --mono:"IBM Plex Mono",monospace;
-  --shadow:0 1px 2px rgba(14,27,51,.04),0 8px 24px rgba(14,27,51,.06);
+:root, :root[data-theme=light]{
+  --bg:#F5F6FC; --panel:#FFFFFF; --panel2:#FAFBFF; --ink:#12172E; --mut:#5E6684;
+  --line:#E6E9F5; --line2:#D4D9EC;
+  --acc:#6C5CF7; --acc-hi:#5A49F0; --acc-ink:#fff; --acc-soft:rgba(108,92,247,.10);
+  --mint:#10B981; --mint-soft:rgba(16,185,129,.12);
+  --amber:#E8A23B; --amber-soft:rgba(232,162,59,.14);
+  --rose:#E4506A; --rose-soft:rgba(228,80,106,.10);
+  --lime:#9BE33B;
+  --side:#10142B; --side-ink:#EDEFFB; --side-mut:#8C94B8;
+  --shadow:0 1px 2px rgba(18,23,46,.05),0 10px 30px rgba(18,23,46,.07);
+  --glow:0 0 0 3px var(--acc-soft);
+}
+:root[data-theme=dark]{
+  --bg:#0A0E1E; --panel:#121730; --panel2:#171D3B; --ink:#EDEFFB; --mut:#8C94B8;
+  --line:#232B52; --line2:#2E3868;
+  --acc:#8B7BFF; --acc-hi:#A093FF; --acc-ink:#0A0E1E; --acc-soft:rgba(139,123,255,.16);
+  --mint:#2EE6A8; --mint-soft:rgba(46,230,168,.14);
+  --amber:#F5B857; --amber-soft:rgba(245,184,87,.14);
+  --rose:#FF7590; --rose-soft:rgba(255,117,144,.12);
+  --lime:#C6F35F;
+  --side:#0D1226; --side-ink:#EDEFFB; --side-mut:#8C94B8;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 34px rgba(0,0,0,.35);
+  --glow:0 0 0 3px var(--acc-soft);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+html{color-scheme:light dark}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
 a{color:inherit;text-decoration:none}
-h1,h2,h3{font-family:var(--disp);letter-spacing:-.02em;font-weight:700}
-.mono{font-family:var(--mono)}
-button{font-family:var(--body)}
-input,select{font-family:var(--body);font-size:14.5px;color:var(--ink);background:#fff;border:1px solid var(--line-strong);border-radius:9px;padding:11px 13px;width:100%;transition:border-color .12s}
-input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-soft)}
-label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
-.btn{font-weight:600;font-size:14.5px;border-radius:9px;padding:11px 18px;cursor:pointer;border:1px solid transparent;transition:.14s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
-.btn-primary{background:var(--indigo);color:#fff}.btn-primary:hover{background:var(--indigo-dark)}
-.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}.btn-ghost:hover{border-color:var(--ink)}
-.btn-danger{background:transparent;color:var(--rose);border-color:transparent}
-.btn[disabled]{opacity:.55;cursor:default}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:-.03em}
-.brand .dot{width:22px;height:22px;border-radius:6px;background:var(--indigo);position:relative;flex:none}
-.brand .dot::after{content:"";position:absolute;inset:6px 6px auto auto;width:6px;height:6px;border-radius:50%;background:var(--gold)}
-.chip{font-family:var(--mono);font-size:11px;padding:2px 9px;border-radius:999px;font-weight:500;white-space:nowrap}
-.chip.ok{background:rgba(18,150,138,.12);color:#0B6A61}
-.chip.warn{background:rgba(230,160,44,.16);color:#8A5B08}
-.chip.mut{background:rgba(91,103,136,.12);color:var(--slate)}
-.chip.t1{background:rgba(230,160,44,.14);color:#8A5B08}.chip.t2{background:var(--indigo-soft);color:var(--indigo-dark)}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-.02em;font-weight:700}
+.mono{font-family:"IBM Plex Mono",monospace}
+input,select,textarea{font-family:Inter;font-size:14.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:11px 13px;width:100%;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:var(--glow)}
+textarea{resize:vertical;min-height:84px}
+label{display:block;font-size:13px;font-weight:600;margin:13px 0 6px}
+.btn{font-family:Inter;font-weight:600;font-size:14px;border-radius:11px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.15s;display:inline-flex;align-items:center;gap:8px;justify-content:center;background:transparent;color:var(--ink)}
+.btn-primary{background:var(--acc);color:var(--acc-ink)}
+.btn-primary:hover{background:var(--acc-hi);transform:translateY(-1px)}
+.btn-ghost{border-color:var(--line2)}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc)}
+.btn-mint{background:var(--mint-soft);color:var(--mint)}
+.btn-sm{padding:6px 12px;font-size:13px;border-radius:9px}
+.btn[disabled]{opacity:.5;cursor:default;transform:none}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque";font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--acc),#9F5CF7);position:relative;flex:none}
+.brand .dot::after{content:"";position:absolute;inset:7px 7px auto auto;width:6px;height:6px;border-radius:50%;background:var(--lime)}
+.chip{font-family:"IBM Plex Mono";font-size:11px;padding:3px 10px;border-radius:999px;font-weight:500;white-space:nowrap}
+.chip.ok{background:var(--mint-soft);color:var(--mint)}
+.chip.warn{background:var(--amber-soft);color:var(--amber)}
+.chip.bad{background:var(--rose-soft);color:var(--rose)}
+.chip.mut{background:var(--acc-soft);color:var(--acc)}
+.chip.gray{background:color-mix(in srgb,var(--mut) 14%,transparent);color:var(--mut)}
 
-/* ---------- login screen ---------- */
-.login-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-.login-left{background:var(--ink);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
-.login-left::before{content:"";position:absolute;bottom:-30%;left:-15%;width:70%;height:120%;background:radial-gradient(circle,rgba(230,160,44,.14),transparent 60%)}
-.login-left h1{font-size:clamp(26px,3vw,38px);line-height:1.1;max-width:14ch;position:relative}
-.login-left .sub{color:#AAB4CE;margin-top:14px;max-width:34ch;position:relative}
-.login-left .foot{font-family:var(--mono);font-size:12px;color:#AAB4CE;position:relative}
-.login-right{display:flex;align-items:center;justify-content:center;padding:40px 24px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px;width:100%;max-width:420px}
+/* login */
+.login-wrap{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+.login-left{background:var(--side);color:var(--side-ink);padding:52px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-left::before{content:"";position:absolute;top:-30%;right:-25%;width:80%;height:120%;background:radial-gradient(circle,rgba(139,123,255,.22),transparent 62%)}
+.login-left::after{content:"";position:absolute;bottom:-25%;left:-15%;width:60%;height:90%;background:radial-gradient(circle,rgba(198,243,95,.10),transparent 60%)}
+.login-left h1{font-size:clamp(28px,3.4vw,44px);line-height:1.05;max-width:15ch;position:relative;font-weight:800}
+.login-left h1 em{font-style:normal;background:linear-gradient(90deg,var(--acc-hi),var(--lime));-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-left .sub{color:var(--side-mut);margin-top:16px;max-width:36ch;position:relative;font-size:15.5px}
+.login-left .foot{font-family:"IBM Plex Mono";font-size:12px;color:var(--side-mut);position:relative}
+.login-right{display:flex;align-items:center;justify-content:center;padding:36px 22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:30px;width:100%;max-width:430px}
 .card h2{font-size:22px;margin-bottom:4px}
-.card .hint{font-size:13.5px;color:var(--slate);margin-bottom:8px}
-.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--slate);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.card .hint{font-size:13.5px;color:var(--mut);margin-bottom:6px}
+.tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:8px}
+.tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px 0;font-size:13.5px;font-weight:600;color:var(--mut);cursor:pointer;font-family:Inter;transition:.15s}
+.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--mut);font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.1em}
 .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
-.tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:6px}
-.tabs button{flex:1;border:0;background:transparent;border-radius:7px;padding:8px 0;font-size:13.5px;font-weight:600;color:var(--slate);cursor:pointer}
-.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(14,27,51,.08)}
-.err{background:rgba(196,72,95,.08);color:var(--rose);border:1px solid rgba(196,72,95,.25);border-radius:9px;padding:10px 13px;font-size:13.5px;margin-top:14px;display:none}
+.err{background:var(--rose-soft);color:var(--rose);border:1px solid color-mix(in srgb,var(--rose) 30%,transparent);border-radius:11px;padding:10px 13px;font-size:13.5px;margin-top:14px;display:none}
 .err.show{display:block}
 #gbtn{display:flex;justify-content:center;min-height:44px}
-@media(max-width:840px){.login-wrap{grid-template-columns:1fr}.login-left{display:none}}
+@media(max-width:860px){.login-wrap{grid-template-columns:1fr}.login-left{display:none}}
 
-/* ---------- app shell ---------- */
-.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-.side{background:var(--ink);color:#fff;padding:22px 16px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh}
-.side .brand{color:#fff}
-.nav{display:flex;flex-direction:column;gap:4px}
-.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:14px;color:#AAB4CE;font-weight:500}
-.nav a:hover{color:#fff;background:rgba(255,255,255,.06)}
-.nav a.on{color:#fff;background:rgba(255,255,255,.1)}
-.nav a .ic{font-family:var(--mono);font-size:11px;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+/* shell */
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);padding:22px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.side .brand{color:var(--side-ink);padding:0 8px}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav .grp{font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--side-mut);margin:12px 8px 5px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--side-mut);font-weight:500;transition:.13s}
+.nav a:hover{color:var(--side-ink);background:rgba(255,255,255,.06)}
+.nav a.on{color:var(--side-ink);background:rgba(139,123,255,.18)}
+.nav a .ic{font-family:"IBM Plex Mono";font-size:11px;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.09);display:grid;place-items:center;flex:none}
 .side .spacer{flex:1}
-.userbox{border-top:1px solid rgba(255,255,255,.12);padding-top:16px;font-size:13px}
-.userbox .em{color:#AAB4CE;font-family:var(--mono);font-size:11.5px;word-break:break-all}
-.main{padding:30px 36px;max-width:1180px;width:100%}
-.page-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-.page-h h1{font-size:26px}
-.page-h .crumb{font-family:var(--mono);font-size:12px;color:var(--slate)}
-@media(max-width:760px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;align-items:center;flex-wrap:wrap}.side .spacer,.userbox{display:none}.nav{flex-direction:row}}
+.userbox{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-size:13px}
+.userbox .em{color:var(--side-mut);font-family:"IBM Plex Mono";font-size:11px;word-break:break-all}
+.theme-toggle{display:flex;gap:6px;background:rgba(255,255,255,.07);border-radius:999px;padding:4px;margin:12px 0}
+.theme-toggle button{flex:1;border:0;border-radius:999px;padding:6px;background:transparent;color:var(--side-mut);cursor:pointer;font-size:13px;font-family:Inter;font-weight:600}
+.theme-toggle button.on{background:var(--acc);color:var(--acc-ink)}
+.main{padding:28px 34px;max-width:1220px;width:100%}
+.page-h{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.page-h h1{font-size:25px}
+.page-h .crumb{font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.side{position:static;height:auto}}
 
-/* ---------- widgets ---------- */
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-.stat .k{font-family:var(--mono);font-size:12px;color:var(--slate)}
-.stat .v{font-family:var(--disp);font-weight:700;font-size:30px;margin-top:6px}
-.stat .v small{font-family:var(--mono);font-size:13px;color:var(--teal);font-weight:500;margin-left:6px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
-.panel + .panel{margin-top:20px}
-.panel-t{font-family:var(--disp);font-weight:700;font-size:15px;margin-bottom:14px}
+/* widgets */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;transition:.15s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat .k{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--mut)}
+.stat .v{font-family:"Bricolage Grotesque";font-weight:700;font-size:29px;margin-top:5px}
+.stat .v small{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--mint);font-weight:500;margin-left:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.panel + .panel{margin-top:18px}
+.panel-t{font-family:"Bricolage Grotesque";font-weight:700;font-size:15px;margin-bottom:13px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{text-align:left;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:500;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+th{text-align:left;font-family:"IBM Plex Mono";font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);font-weight:500;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
 td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
-.fn{display:grid;grid-template-columns:120px 1fr 34px;align-items:center;gap:10px;margin:8px 0}
-.fn .lbl{font-family:var(--mono);font-size:12px;color:var(--slate)}
-.fn .track{height:8px;background:var(--line);border-radius:5px;overflow:hidden}
-.fn .fill{height:100%;background:linear-gradient(90deg,var(--indigo),#6B79E0);border-radius:5px;transition:width .8s ease}
-.fn .n{font-family:var(--mono);font-size:13px;text-align:right;font-weight:500}
-.grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
-@media(max-width:900px){.grid2{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}}
-.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-.toolbar input[type=search]{max-width:320px}
-.empty{color:var(--slate);font-size:14px;padding:26px 0;text-align:center}
-.empty b{display:block;font-family:var(--disp);color:var(--ink);font-size:16px;margin-bottom:5px}
-.drop{border:1.5px dashed var(--line-strong);border-radius:12px;padding:30px;text-align:center;color:var(--slate);font-size:14px;transition:.14s;cursor:pointer}
-.drop:hover,.drop.over{border-color:var(--indigo);background:var(--indigo-soft)}
-.drop b{display:block;font-family:var(--disp);color:var(--ink);font-size:16px;margin-bottom:4px}
-.note{font-size:12.5px;color:var(--slate);margin-top:10px}
-.note code{font-family:var(--mono);background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11.5px}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:#fff;border-radius:11px;padding:13px 18px;font-size:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.22s;pointer-events:none;max-width:340px;z-index:99}
+.bar{display:grid;grid-template-columns:96px 1fr 52px;align-items:center;gap:10px;margin:8px 0}
+.bar .lbl{font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
+.bar .track{height:9px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(90deg,var(--acc),#A78BFA);border-radius:6px;transition:width .8s ease}
+.bar .fill.mint{background:linear-gradient(90deg,var(--mint),#7CF2C8)}
+.bar .n{font-family:"IBM Plex Mono";font-size:12.5px;text-align:right;font-weight:500}
+.grid2{display:grid;grid-template-columns:1.05fr 1fr;gap:18px}
+@media(max-width:940px){.grid2{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input[type=search]{max-width:300px}
+.empty{color:var(--mut);font-size:14px;padding:24px 0;text-align:center}
+.empty b{display:block;font-family:"Bricolage Grotesque";color:var(--ink);font-size:16px;margin-bottom:4px}
+.drop{border:1.5px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--mut);font-size:14px;transition:.15s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--acc);background:var(--acc-soft)}
+.drop b{display:block;font-family:"Bricolage Grotesque";color:var(--ink);font-size:16px;margin-bottom:4px}
+.note{font-size:12.5px;color:var(--mut);margin-top:8px}
+.note code{font-family:"IBM Plex Mono";background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:11px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);border-radius:13px;padding:12px 18px;font-size:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.22s;pointer-events:none;max-width:360px;z-index:99}
+:root[data-theme=dark] .toast{background:var(--panel2);color:var(--ink);border:1px solid var(--line2)}
 .toast.show{opacity:1;transform:none}
-.result-summary{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0 6px}
-.result-summary .pill{border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px}
-.result-summary .pill b{font-family:var(--disp);font-size:20px;display:block}
-.pill.good b{color:var(--teal)}.pill.bad b{color:var(--rose)}.pill.mid b{color:var(--gold)}
-.errlist{margin-top:12px;font-size:13px}
-.errlist li{margin:5px 0 5px 18px;color:var(--rose)}
+.reasons{margin:6px 0 0;font-size:12.5px;color:var(--rose)}
+.reasons li{margin-left:16px}
+.drive-card{border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px;background:var(--panel2);transition:.15s}
+.drive-card:hover{border-color:var(--line2)}
+.drive-card .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.drive-card .nm{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px}
+.drive-card .pkg{font-family:"IBM Plex Mono";font-weight:600;color:var(--mint)}
+.rule-row{display:grid;grid-template-columns:1.2fr .8fr 1.2fr 34px;gap:8px;margin-bottom:8px;align-items:center}
+.rule-row .x{border:1px solid var(--line2);background:transparent;color:var(--rose);border-radius:9px;height:38px;cursor:pointer;font-size:16px}
+.or-block{border:1px dashed var(--line2);border-radius:12px;padding:12px;margin:10px 0;background:var(--acc-soft)}
+.or-block .t{font-family:"IBM Plex Mono";font-size:11px;color:var(--acc);letter-spacing:.08em;margin-bottom:8px}
+.qa-item{border-bottom:1px solid var(--line);padding:13px 0}
+.qa-item:last-child{border-bottom:0}
+.qa-item .t{font-weight:600;font-size:14.5px}
+.qa-item .b{color:var(--mut);font-size:13.5px;margin-top:3px}
+.qa-item .ans{margin-top:9px;background:var(--mint-soft);border-radius:11px;padding:10px 13px;font-size:13.5px}
+.cal-day{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+.cal-day:last-child{border-bottom:0}
+.cal-day .d{font-family:"IBM Plex Mono";min-width:88px;font-size:12.5px;color:var(--mut);padding-top:2px}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:12px}
+.kv:last-child{border-bottom:0}
+.kv .k{color:var(--mut)}
+.kv .v{font-weight:600;text-align:right}
+.switch{display:flex;align-items:center;gap:10px;padding:10px 0}
+.switch input{width:auto}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -123,304 +172,596 @@ tr:last-child td{border-bottom:0}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================ tiny framework ============================ */
-const $ = s => document.querySelector(s);
-const root = $("#root");
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let AUTH = JSON.parse(localStorage.getItem("cohort_auth") || "null");
-let CFG = { google_client_id: null };
-
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 3200); }
-function saveAuth(a){ AUTH=a; localStorage.setItem("cohort_auth", JSON.stringify(a)); }
-function signOut(){ localStorage.removeItem("cohort_auth"); AUTH=null; location.hash="#/login"; render(); }
-
-async function api(path, opts={}){
-  const headers = opts.headers || {};
-  if (AUTH?.token) headers["Authorization"] = "Bearer " + AUTH.token;
-  if (opts.body && !(opts.body instanceof FormData)) headers["Content-Type"]="application/json";
-  const r = await fetch(path, {...opts, headers});
-  if (r.status === 401 && AUTH){ signOut(); throw new Error("Session expired — sign in again"); }
-  const data = await r.json().catch(()=> ({}));
-  if (!r.ok) throw new Error(data.detail || ("Request failed ("+r.status+")"));
-  return data;
+/* ============================ core ============================ */
+const $=s=>document.querySelector(s);
+const root=$("#root");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let AUTH=JSON.parse(localStorage.getItem("cohort_auth")||"null");
+let CFG={google_client_id:null};
+const THEME_KEY="cohort_theme";
+function applyTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem(THEME_KEY,t);
+  document.querySelectorAll(".theme-toggle button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));}
+applyTheme(localStorage.getItem(THEME_KEY)||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200);}
+function saveAuth(a){AUTH=a;localStorage.setItem("cohort_auth",JSON.stringify(a));}
+function signOut(){localStorage.removeItem("cohort_auth");AUTH=null;location.hash="#/login";render();}
+async function api(path,opts={}){
+  const headers=opts.headers||{};
+  if(AUTH?.token)headers["Authorization"]="Bearer "+AUTH.token;
+  if(opts.body&&!(opts.body instanceof FormData))headers["Content-Type"]="application/json";
+  const r=await fetch(path,{...opts,headers});
+  if(r.status===401&&AUTH){signOut();throw new Error("Session expired — sign in again");}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||("Request failed ("+r.status+")"));
+  return d;
 }
-const money = v => v==null ? "—" : "₹" + (v/100000).toFixed(1) + " LPA".replace(" ","\u00A0");
-const ROUND_LABELS = {resume_screening:"Screening",online_assessment:"Online test",technical_1:"Technical 1",technical_2:"Technical 2",technical_3:"Technical 3",managerial:"Managerial",hr:"HR",final_placement:"Placed"};
+const money=v=>v==null?"—":"₹"+(v/100000).toFixed(1)+"\u00A0LPA";
+const RL={resume_screening:"Screening",online_assessment:"Online test",technical_1:"Tech 1",technical_2:"Tech 2",technical_3:"Tech 3",managerial:"Managerial",hr:"HR",final_placement:"Placed"};
+const ROUNDS=Object.keys(RL);
+const isStaff=()=>AUTH&&["owner","admin","sub_admin"].includes(AUTH.role);
 
-/* ================================ login ================================ */
+/* ============================ login ============================ */
 function LoginView(){
-  root.innerHTML = `
+  root.innerHTML=`
   <div class="login-wrap">
     <div class="login-left">
       <a class="brand" href="/"><span class="dot"></span>Cohort</a>
-      <div>
-        <h1>Every student, every round, one live view.</h1>
-        <p class="sub">Sign in to your college's placement workspace.</p>
-      </div>
-      <p class="foot">roster-verified onboarding · scoped access · accreditation-ready exports</p>
+      <div><h1>Your placement season, <em>finally organised.</em></h1>
+        <p class="sub">Drives, eligibility, interviews, feedback — one workspace your whole college shares.</p></div>
+      <p class="foot">roster-verified · scoped access · zero spreadsheets</p>
     </div>
-    <div class="login-right">
-      <div class="card">
-        <div class="tabs" role="tablist">
-          <button id="tab-in" class="on">Sign in</button>
-          <button id="tab-claim">Claim account</button>
-        </div>
-
-        <div id="pane-in">
-          <h2>Welcome back</h2>
-          <p class="hint">Use your college Google account or your email and password.</p>
-          <div id="gbtn"></div>
-          <div class="divider" id="gdiv">OR</div>
-          <label for="li-email">Email</label>
-          <input id="li-email" type="email" autocomplete="email" placeholder="you@college.ac.in">
-          <label for="li-pass">Password</label>
-          <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
-          <div class="err" id="li-err"></div>
-          <button class="btn btn-primary" id="li-go" style="width:100%;margin-top:18px">Sign in</button>
-        </div>
-
-        <div id="pane-claim" style="display:none">
-          <h2>Claim your account</h2>
-          <p class="hint">First time here, and your college doesn't use Google sign-in? Use the activation code from your placement cell.</p>
-          <label for="cl-college">College code</label>
-          <input id="cl-college" placeholder="e.g. demo" autocapitalize="none">
-          <label for="cl-roll">Roll number</label>
-          <input id="cl-roll" placeholder="e.g. 01DIT23004" autocapitalize="characters">
-          <label for="cl-code">Activation code</label>
-          <input id="cl-code" placeholder="8-character code" autocapitalize="characters">
-          <label for="cl-pass">Choose a password <span style="color:var(--slate);font-weight:400">(min 8 characters)</span></label>
-          <input id="cl-pass" type="password" autocomplete="new-password">
-          <div class="err" id="cl-err"></div>
-          <button class="btn btn-primary" id="cl-go" style="width:100%;margin-top:18px">Claim account &amp; sign in</button>
-        </div>
+    <div class="login-right"><div class="card">
+      <div class="tabs"><button id="tab-in" class="on">Sign in</button><button id="tab-claim">Claim account</button></div>
+      <div id="pane-in">
+        <h2>Welcome back</h2>
+        <p class="hint">College Google account, or email &amp; password.</p>
+        <div id="gbtn"></div><div class="divider" id="gdiv">OR</div>
+        <label for="li-email">Email</label><input id="li-email" type="email" autocomplete="email" placeholder="you@college.ac.in">
+        <label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+        <div class="err" id="li-err"></div>
+        <button class="btn btn-primary" id="li-go" style="width:100%;margin-top:16px">Sign in</button>
       </div>
-    </div>
+      <div id="pane-claim" style="display:none">
+        <h2>Claim your account</h2>
+        <p class="hint">First time here? Use the activation code from your placement cell.</p>
+        <label>College code</label><input id="cl-college" placeholder="e.g. gnc" autocapitalize="none">
+        <label>Roll number</label><input id="cl-roll" placeholder="e.g. 01GNC22CS001" autocapitalize="characters">
+        <label>Activation code</label><input id="cl-code" placeholder="8-character code" autocapitalize="characters">
+        <label>Choose a password <span style="color:var(--mut);font-weight:400">(min 8 chars)</span></label>
+        <input id="cl-pass" type="password" autocomplete="new-password">
+        <div class="err" id="cl-err"></div>
+        <button class="btn btn-primary" id="cl-go" style="width:100%;margin-top:16px">Claim account &amp; sign in</button>
+      </div>
+    </div></div>
   </div>`;
-
-  const swap = claim => {
-    $("#pane-in").style.display = claim ? "none" : "";
-    $("#pane-claim").style.display = claim ? "" : "none";
-    $("#tab-in").classList.toggle("on", !claim);
-    $("#tab-claim").classList.toggle("on", claim);
-  };
-  $("#tab-in").onclick = () => swap(false);
-  $("#tab-claim").onclick = () => swap(true);
-
-  // Google button — rendered only if the server has a client ID configured
-  if (CFG.google_client_id){
-    const s = document.createElement("script");
-    s.src = "https://accounts.google.com/gsi/client"; s.async = true;
-    s.onload = () => {
-      google.accounts.id.initialize({
-        client_id: CFG.google_client_id,
-        callback: async resp => {
-          try{
-            const d = await api("/api/auth/google", {method:"POST", body: JSON.stringify({credential: resp.credential})});
-            saveAuth(d); enterApp();
-          }catch(e){ showErr("#li-err", e.message); }
-        }
-      });
-      google.accounts.id.renderButton($("#gbtn"), {theme:"outline", size:"large", width:356, text:"continue_with"});
-    };
+  const swap=cl=>{$("#pane-in").style.display=cl?"none":"";$("#pane-claim").style.display=cl?"":"none";
+    $("#tab-in").classList.toggle("on",!cl);$("#tab-claim").classList.toggle("on",cl);};
+  $("#tab-in").onclick=()=>swap(false);$("#tab-claim").onclick=()=>swap(true);
+  if(CFG.google_client_id){
+    const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;
+    s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:async resp=>{
+      try{saveAuth(await api("/api/auth/google",{method:"POST",body:JSON.stringify({credential:resp.credential})}));enterApp();}
+      catch(e){sErr("#li-err",e.message);}}});
+      google.accounts.id.renderButton($("#gbtn"),{theme:"outline",size:"large",width:366,text:"continue_with"});};
     document.head.appendChild(s);
-  } else { $("#gbtn").style.display="none"; $("#gdiv").style.display="none"; }
-
-  const showErr = (sel,msg)=>{ const e=$(sel); e.textContent=msg; e.classList.add("show"); };
-  $("#li-go").onclick = async () => {
-    $("#li-err").classList.remove("show"); $("#li-go").disabled = true;
-    try{
-      const d = await api("/api/auth/login", {method:"POST", body: JSON.stringify({email: $("#li-email").value.trim(), password: $("#li-pass").value})});
-      saveAuth(d); enterApp();
-    }catch(e){ showErr("#li-err", e.message); } finally { $("#li-go").disabled=false; }
-  };
-  $("#li-pass").addEventListener("keydown", e => { if(e.key==="Enter") $("#li-go").click(); });
-  $("#cl-go").onclick = async () => {
-    $("#cl-err").classList.remove("show"); $("#cl-go").disabled = true;
-    try{
-      const d = await api("/api/auth/claim", {method:"POST", body: JSON.stringify({
-        college_slug: $("#cl-college").value.trim(), roll_no: $("#cl-roll").value.trim(),
-        activation_code: $("#cl-code").value.trim(), password: $("#cl-pass").value})});
-      saveAuth(d); toast("Account created — welcome!"); enterApp();
-    }catch(e){ showErr("#cl-err", e.message); } finally { $("#cl-go").disabled=false; }
-  };
+  }else{$("#gbtn").style.display="none";$("#gdiv").style.display="none";}
+  const sErr=(sel,m)=>{const e=$(sel);e.textContent=m;e.classList.add("show");};
+  $("#li-go").onclick=async()=>{$("#li-err").classList.remove("show");$("#li-go").disabled=true;
+    try{saveAuth(await api("/api/auth/login",{method:"POST",body:JSON.stringify({email:$("#li-email").value.trim(),password:$("#li-pass").value})}));enterApp();}
+    catch(e){sErr("#li-err",e.message);}finally{$("#li-go").disabled=false;}};
+  $("#li-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#li-go").click();});
+  $("#cl-go").onclick=async()=>{$("#cl-err").classList.remove("show");$("#cl-go").disabled=true;
+    try{saveAuth(await api("/api/auth/claim",{method:"POST",body:JSON.stringify({college_slug:$("#cl-college").value.trim(),roll_no:$("#cl-roll").value.trim(),activation_code:$("#cl-code").value.trim(),password:$("#cl-pass").value})}));toast("Account created — welcome!");enterApp();}
+    catch(e){sErr("#cl-err",e.message);}finally{$("#cl-go").disabled=false;}};
 }
 
-/* ============================== app shell ============================== */
-const STAFF_NAV = [
-  ["#/dashboard","D","Dashboard"], ["#/students","R","Students"],
-  ["#/import","↥","Import roster"], ["#/companies","C","Companies"],
-];
-const STUDENT_NAV = [ ["#/home","H","My placements"], ["#/companies","C","Drives"] ];
-
-function Shell(contentHTML, active){
-  const isStaff = ["owner","admin","sub_admin"].includes(AUTH.role);
-  const nav = (isStaff ? STAFF_NAV : STUDENT_NAV).map(([h,ic,l]) =>
-    `<a href="${h}" class="${h===active?'on':''}"><span class="ic">${ic}</span>${l}</a>`).join("");
-  root.innerHTML = `
+/* ============================ shell ============================ */
+const STAFF_NAV=[["Manage",[["#/dashboard","D","Dashboard"],["#/students","R","Students"],["#/import","↥","Import roster"],["#/drives-admin","C","Drives"]]],
+                 ["Configure",[["#/policy","P","Placement policy"],["#/notes","N","Notes & calendar"]]],
+                 ["Insights",[["#/analytics","A","Analytics"],["#/qa-admin","Q","Q&A inbox"],["#/edits","E","Edit requests"]]]];
+const STUDENT_NAV=[["Placements",[["#/home","H","My placements"],["#/drives","C","Drives"],["#/feedback","F","Experiences"]]],
+                   ["You",[["#/profile","U","Profile"],["#/qa","Q","Q&A"]]]];
+function Shell(html,active){
+  const groups=(isStaff()?STAFF_NAV:STUDENT_NAV).map(([g,items])=>
+    `<div class="grp">${g}</div>`+items.map(([h,ic,l])=>`<a href="${h}" class="${h===active?'on':''}"><span class="ic">${ic}</span>${l}</a>`).join("")).join("");
+  root.innerHTML=`
   <div class="shell">
     <aside class="side">
       <a class="brand" href="/"><span class="dot"></span>Cohort</a>
-      <nav class="nav">${nav}</nav>
+      <nav class="nav">${groups}</nav>
       <div class="spacer"></div>
       <div class="userbox">
-        <div style="font-weight:600">${esc(AUTH.user?.full_name || "—")}</div>
-        <div class="em">${esc(AUTH.user?.email || "")}</div>
-        <div style="margin:8px 0"><span class="chip mut">${esc(AUTH.role)}</span></div>
-        <button class="btn btn-ghost" style="width:100%;color:#fff;border-color:rgba(255,255,255,.25)" onclick="signOut()">Sign out</button>
+        <div style="font-weight:600">${esc(AUTH.user?.full_name||"—")}</div>
+        <div class="em">${esc(AUTH.user?.email||"")}</div>
+        <div style="margin:7px 0"><span class="chip mut">${esc(AUTH.role)}</span></div>
+        <div class="theme-toggle">
+          <button data-t="light" onclick="applyTheme('light')">☀ Light</button>
+          <button data-t="dark" onclick="applyTheme('dark')">☾ Dark</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;color:var(--side-ink);border-color:rgba(255,255,255,.22)" onclick="signOut()">Sign out</button>
       </div>
     </aside>
-    <main class="main">${contentHTML}</main>
+    <main class="main">${html}</main>
   </div>`;
+  applyTheme(document.documentElement.dataset.theme);
 }
 
-/* =============================== views ================================ */
-async function DashboardView(){
-  Shell(`<div class="page-h"><h1>Dashboard</h1><span class="crumb" id="cname"></span></div>
-    <div class="stat-row" id="stats"></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">Pipeline · all active drives</div><div id="funnel"></div></div>
-      <div class="panel"><div class="panel-t">Drives by outcome</div><table><thead><tr><th>Company</th><th>Tier</th><th>Registered</th><th>Placed</th></tr></thead><tbody id="drv"></tbody></table></div>
-    </div>`, "#/dashboard");
+/* ====================== student views ====================== */
+async function StudentHome(){
+  Shell(`<div class="page-h"><h1>My placements</h1><span class="crumb" id="cn"></span></div>
+    <div class="stat-row" id="st"></div>
+    <div class="panel"><div class="panel-t">My applications</div>
+    <table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Stage</th><th>Status</th></tr></thead><tbody id="apps"></tbody></table></div>`,"#/home");
   try{
-    const me = await api("/api/auth/me"); $("#cname").textContent = me.college?.name || "";
-    const d = await api("/api/dashboard/stats");
-    const t = d.totals;
-    $("#stats").innerHTML = [["Students",t.students],["Companies",t.companies],["Applications",t.applications],
-      ["Placed",`${t.placed} <small>${d.placement_rate}%</small>`]]
+    const me=await api("/api/auth/me");$("#cn").textContent=me.college?.name||"";
+    const p=(await api("/api/me/profile")).profile;
+    const rz=await api("/api/me/resume");
+    $("#st").innerHTML=[["Applications",p.applications],["Offers",p.offers],["CGPA",p.cgpa??"—"],["Resume",rz?"on file":"missing"]]
+      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:${String(v).length>7?'19px':'29px'}">${v}</div></div>`).join("");
+    const apps=await api("/api/me/applications");
+    $("#apps").innerHTML=apps.map(a=>`<tr><td>${esc(a.company)}</td>
+      <td><span class="chip ${a.category==='tier1'?'warn':'mut'}">${esc(a.category||'—')}</span></td>
+      <td class="mono">${money(a.package)}</td><td>${RL[a.current_round]||esc(a.current_round)}</td>
+      <td>${a.status==='placed'?'<span class="chip ok">placed</span>':a.status==='rejected'?'<span class="chip bad">not selected</span>':'<span class="chip mut">in progress</span>'}</td></tr>`).join("")
+      ||`<tr><td colspan="5"><div class="empty"><b>No applications yet</b>Head to Drives and register for one.</div></td></tr>`;
+  }catch(e){toast(e.message);}
+}
+
+async function DrivesStudent(){
+  Shell(`<div class="page-h"><h1>Drives</h1><a class="btn btn-ghost btn-sm" href="#/profile">Manage resume →</a></div><div id="list"></div>`,"#/drives");
+  try{
+    const ds=await api("/api/me/drives");
+    $("#list").innerHTML=ds.map(d=>`
+      <div class="drive-card">
+        <div class="top">
+          <div><span class="nm">${esc(d.name)}</span>
+            <span class="chip ${d.category==='tier1'?'warn':d.category==='dream'?'mut':'gray'}" style="margin-left:8px">${esc(d.category||'—')}</span>
+            ${d.status!==1?'<span class="chip gray" style="margin-left:6px">closed</span>':''}</div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span class="pkg">${money(d.package)}</span>
+            ${d.eligible&&d.status===1?`<button class="btn btn-primary btn-sm" onclick="registerDrive(${d.id},'${esc(d.name)}')">Register</button>`
+              :d.eligible?'<span class="chip gray">not open</span>':'<span class="chip bad">not eligible</span>'}
+          </div>
+        </div>
+        ${d.reasons.length?`<ul class="reasons">${d.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
+      </div>`).join("")||`<div class="panel"><div class="empty"><b>No drives yet</b>They'll appear here when your cell posts one.</div></div>`;
+  }catch(e){toast(e.message);}
+}
+async function registerDrive(id,name){
+  try{await api("/api/me/register/"+id,{method:"POST"});toast("Registered for "+name+" ✓");DrivesStudent();}
+  catch(e){toast(e.message);}
+}
+
+async function ProfileView(){
+  Shell(`<div class="page-h"><h1>Profile</h1></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">Your record <button class="btn btn-ghost btn-sm" onclick="$('#er').style.display='block'">Request an edit</button></div>
+        <div id="pv"></div>
+        <div id="er" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:6px">
+          <label>Field</label><select id="er-f"><option value="cgpa">CGPA</option><option value="backlogs">Backlogs</option><option value="full_name">Name</option><option value="email">Email</option><option value="attr:tenth_pct">10th %</option><option value="attr:twelfth_pct">12th %</option><option value="attr:gap_years">Gap years</option></select>
+          <label>Correct value</label><input id="er-v" placeholder="e.g. 8.9">
+          <label>Why? (optional)</label><input id="er-n" placeholder="Sem 6 results updated">
+          <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="sendEdit()">Submit request</button>
+        </div>
+        <div id="reqs" style="margin-top:14px"></div>
+      </div>
+      <div class="panel"><div class="panel-t">Resume</div>
+        <div id="rz-meta" class="note" style="margin:0 0 12px"></div>
+        <div class="drop" id="rz-drop"><b>Drop your resume PDF</b>or click to choose (max 2 MB)
+          <input type="file" id="rz-file" accept="application/pdf" style="display:none"></div>
+      </div>
+    </div>`,"#/profile");
+  try{
+    const d=await api("/api/me/profile");const p=d.profile;
+    const attrs=p.attributes||{};
+    $("#pv").innerHTML=[["Roll no",p.roll_no],["Name",p.full_name],["Email",p.email],["Branch",p.branch],["CGPA",p.cgpa??"—"],["Backlogs",p.backlogs],
+      ...Object.entries(attrs).map(([k,v])=>[k.replace(/_/g," "),v])]
+      .map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("");
+    $("#reqs").innerHTML=d.edit_requests.length?`<div class="panel-t" style="font-size:13px">Your requests</div>`+
+      d.edit_requests.map(r=>`<div class="kv"><span class="k">${esc(r.field)} → ${esc(r.requested_value)}</span>
+        <span class="chip ${r.status==='approved'?'ok':r.status==='rejected'?'bad':'warn'}">${r.status}</span></div>`).join(""):"";
+    const rz=await api("/api/me/resume");
+    $("#rz-meta").textContent=rz?`On file: ${rz.filename} · ${rz.size_kb} KB · updated ${new Date(rz.updated_at).toLocaleDateString()}`:"No resume uploaded yet — required before registering for any drive.";
+    const drop=$("#rz-drop"),file=$("#rz-file");
+    drop.onclick=()=>file.click();
+    ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+    ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+    drop.addEventListener("drop",e=>{if(e.dataTransfer.files[0])upResume(e.dataTransfer.files[0]);});
+    file.onchange=()=>{if(file.files[0])upResume(file.files[0]);};
+  }catch(e){toast(e.message);}
+}
+async function upResume(f){const fd=new FormData();fd.append("file",f);
+  try{const r=await api("/api/me/resume",{method:"POST",body:fd});toast(`Resume saved (${r.size_kb} KB)`);ProfileView();}catch(e){toast(e.message);}}
+async function sendEdit(){
+  try{await api("/api/me/edit-request",{method:"POST",body:JSON.stringify({field:$("#er-f").value,requested_value:$("#er-v").value,note:$("#er-n").value})});
+    toast("Request sent to your placement cell");ProfileView();}catch(e){toast(e.message);}}
+
+async function QAStudent(){
+  Shell(`<div class="page-h"><h1>Q&amp;A</h1></div>
+    <div class="panel"><div class="panel-t">Ask your placement cell</div>
+      <input id="q-t" placeholder="One-line question (e.g. When is the Zentrix OA?)">
+      <textarea id="q-b" placeholder="Any details (optional)" style="margin-top:10px"></textarea>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="postQ()">Post question</button>
+    </div>
+    <div class="panel"><div class="panel-t">Questions &amp; answers</div><div id="qs"></div></div>`,"#/qa");
+  loadQs();
+}
+async function loadQs(){try{const qs=await api("/api/me/questions");
+  $("#qs").innerHTML=qs.map(q=>`<div class="qa-item"><div class="t">${esc(q.title)}
+    <span class="chip ${q.status==='answered'?'ok':q.status==='escalated'?'warn':'gray'}" style="margin-left:8px">${q.status}</span></div>
+    ${q.body?`<div class="b">${esc(q.body)}</div>`:""}
+    ${q.answer?`<div class="ans"><b>PO:</b> ${esc(q.answer)}</div>`:""}</div>`).join("")
+  ||`<div class="empty"><b>Nothing yet</b>Ask the first question.</div>`;}catch(e){toast(e.message);}}
+async function postQ(){try{await api("/api/me/questions",{method:"POST",body:JSON.stringify({title:$("#q-t").value,body:$("#q-b").value})});
+  $("#q-t").value="";$("#q-b").value="";toast("Posted — your CR will see it");loadQs();}catch(e){toast(e.message);}}
+
+async function FeedbackView(){
+  Shell(`<div class="page-h"><h1>Interview experiences</h1></div>
+    <div class="panel" id="fb-form-p"><div class="panel-t">Share yours (opens after you're placed)</div>
+      <div class="grid2">
+        <div><label>Role</label><input id="fb-role" placeholder="SDE Intern">
+          <label>CTC (₹/yr)</label><input id="fb-ctc" type="number" placeholder="1100000">
+          <label>Rounds</label><input id="fb-rounds" placeholder="OA + 2 tech + HR"></div>
+        <div><label>Difficulty (1–5)</label><input id="fb-diff" type="number" min="1" max="5" value="3">
+          <label>Topics asked</label><input id="fb-topics" placeholder="DP, SQL joins, OS basics">
+          <label>Tips for juniors</label><textarea id="fb-tips" style="min-height:58px"></textarea></div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="sendFb()">Submit experience</button>
+    </div>
+    <div class="panel"><div class="panel-t">From your seniors</div><div id="fb-list"></div></div>`,"#/feedback");
+  try{const fb=await api("/api/me/feedback");
+    $("#fb-list").innerHTML=fb.map(f=>`<div class="qa-item">
+      <div class="t">${esc(f.company)} — ${esc(f.role||"")} <span class="chip mut" style="margin-left:8px">${money(f.ctc)}</span>
+        ${f.difficulty?`<span class="chip ${f.difficulty>=4?'bad':f.difficulty>=3?'warn':'ok'}" style="margin-left:6px">difficulty ${f.difficulty}/5</span>`:""}</div>
+      <div class="b">${esc(f.rounds||"")} · ${esc(f.topics||"")}</div>
+      ${f.tips?`<div class="ans">${esc(f.tips)}</div>`:""}</div>`).join("")
+    ||`<div class="empty"><b>No experiences yet</b>Placed seniors' write-ups appear here.</div>`;}catch(e){toast(e.message);}
+}
+async function sendFb(){try{await api("/api/me/feedback",{method:"POST",body:JSON.stringify({role:$("#fb-role").value,ctc:+$("#fb-ctc").value||null,rounds:$("#fb-rounds").value,difficulty:+$("#fb-diff").value||null,topics:$("#fb-topics").value,tips:$("#fb-tips").value})});
+  toast("Thank you — juniors will love this");FeedbackView();}catch(e){toast(e.message);}}
+
+/* ====================== admin views ====================== */
+async function Dashboard(){
+  Shell(`<div class="page-h"><h1>Dashboard</h1><span class="crumb" id="cn"></span></div>
+    <div class="stat-row" id="st"></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">Pipeline · active</div><div id="fn"></div></div>
+      <div class="panel"><div class="panel-t">Upcoming <a class="btn btn-ghost btn-sm" href="#/notes">calendar →</a></div><div id="up"></div></div>
+    </div>`,"#/dashboard");
+  try{
+    const me=await api("/api/auth/me");$("#cn").textContent=me.college?.name||"";
+    const d=await api("/api/dashboard/stats");const t=d.totals;
+    $("#st").innerHTML=[["Students",t.students],["Drives",t.companies],["Applications",t.applications],["Placed",`${t.placed} <small>${d.placement_rate}%</small>`]]
       .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
-    const mx = Math.max(...d.funnel.map(f=>f.count),1);
-    $("#funnel").innerHTML = d.funnel.map(f=>`<div class="fn"><span class="lbl">${ROUND_LABELS[f.round]||f.round}</span><div class="track"><div class="fill" style="width:0" data-w="${(f.count/mx*100).toFixed(0)}"></div></div><span class="n">${f.count}</span></div>`).join("");
-    requestAnimationFrame(()=>document.querySelectorAll("#funnel .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
-    const cs = await api("/api/companies");
-    $("#drv").innerHTML = cs.map(c=>`<tr><td>${esc(c.name)}</td><td><span class="chip ${c.category==='tier1'?'t1':'t2'}">${esc(c.category||'—')}</span></td><td class="mono">${c.registered}</td><td class="mono">${c.placed}</td></tr>`).join("") || `<tr><td colspan="4" class="empty">No drives yet</td></tr>`;
-  }catch(e){ toast(e.message); }
+    const mx=Math.max(...d.funnel.map(f=>f.count),1);
+    $("#fn").innerHTML=d.funnel.map(f=>`<div class="bar"><span class="lbl">${RL[f.round]}</span><div class="track"><div class="fill" style="width:0" data-w="${(f.count/mx*100).toFixed(0)}"></div></div><span class="n">${f.count}</span></div>`).join("");
+    requestAnimationFrame(()=>document.querySelectorAll("#fn .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
+    const notes=await api("/api/admin/notes");
+    const today=new Date().toISOString().slice(0,10);
+    const up=notes.filter(n=>n.note_date>=today).slice(0,5);
+    $("#up").innerHTML=up.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
+      <div><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
+      <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}</div></div>`).join("")
+      ||`<div class="empty"><b>Nothing scheduled</b>Add visits and deadlines in Notes.</div>`;
+  }catch(e){toast(e.message);}
 }
 
 async function StudentsView(){
-  Shell(`<div class="page-h"><h1>Students</h1><a class="btn btn-primary" href="#/import">Import roster</a></div>
-    <div class="panel">
-      <div class="toolbar">
-        <input type="search" id="q" placeholder="Search roll no, name, or email…">
-        <button class="btn btn-ghost" id="codes">Download unclaimed activation codes</button>
-      </div>
-      <table><thead><tr><th>Roll no</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Login</th></tr></thead><tbody id="rows"></tbody></table>
-    </div>`, "#/students");
-  const load = async q => {
-    try{
-      const rows = await api("/api/admin/students" + (q ? "?q="+encodeURIComponent(q) : ""));
-      $("#rows").innerHTML = rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td><td><span class="chip mut">${esc(r.branch)}</span></td><td class="mono">${r.cgpa ?? "—"}</td><td>${r.has_login?'<span class="chip ok">active</span>':'<span class="chip warn">not claimed</span>'}</td></tr>`).join("")
-        || `<tr><td colspan="5"><div class="empty"><b>No students yet</b>Import your roster CSV to get started.</div></td></tr>`;
-    }catch(e){ toast(e.message); }
-  };
-  load();
-  let deb; $("#q").addEventListener("input", e => { clearTimeout(deb); deb=setTimeout(()=>load(e.target.value.trim()), 280); });
-  $("#codes").onclick = async () => {
-    try{
-      const rows = await api("/api/admin/students/activation-codes");
-      if (!rows.length) return toast("Every imported student has already claimed their account.");
-      const csv = "roll_no,full_name,email,branch,activation_code\n" +
-        rows.map(r=>[r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-      a.download = "activation-codes.csv"; a.click(); URL.revokeObjectURL(a.href);
-    }catch(e){ toast(e.message); }
-  };
+  Shell(`<div class="page-h"><h1>Students</h1><a class="btn btn-primary btn-sm" href="#/import">Import roster</a></div>
+    <div class="panel"><div class="toolbar">
+      <input type="search" id="q" placeholder="Search roll, name, email…">
+      <button class="btn btn-ghost btn-sm" id="codes">Unclaimed activation codes</button></div>
+      <table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Login</th></tr></thead><tbody id="rows"></tbody></table></div>`,"#/students");
+  const load=async q=>{try{const rows=await api("/api/admin/students"+(q?"?q="+encodeURIComponent(q):""));
+    $("#rows").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
+      <td><span class="chip gray">${esc(r.branch)}</span></td><td class="mono">${r.cgpa??"—"}</td>
+      <td>${r.has_login?'<span class="chip ok">active</span>':'<span class="chip warn">not claimed</span>'}</td></tr>`).join("")
+    ||`<tr><td colspan="5"><div class="empty"><b>No students</b>Import your roster CSV.</div></td></tr>`;}catch(e){toast(e.message);}};
+  load();let deb;$("#q").addEventListener("input",e=>{clearTimeout(deb);deb=setTimeout(()=>load(e.target.value.trim()),280);});
+  $("#codes").onclick=async()=>{try{const rows=await api("/api/admin/students/activation-codes");
+    if(!rows.length)return toast("Everyone has claimed already.");
+    const csv="roll_no,full_name,email,branch,activation_code\n"+rows.map(r=>[r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="activation-codes.csv";a.click();URL.revokeObjectURL(a.href);}catch(e){toast(e.message);}};
 }
 
 function ImportView(){
   Shell(`<div class="page-h"><h1>Import roster</h1><span class="crumb">CSV · UTF-8</span></div>
-    <div class="panel">
-      <div class="drop" id="drop"><b>Drop your roster CSV here</b>or click to choose a file
-        <input type="file" id="file" accept=".csv,text/csv" style="display:none"></div>
-      <p class="note">Required columns: <code>roll_no</code> <code>email</code> <code>full_name</code> <code>branch_code</code> — optional: <code>cgpa</code> <code>backlogs</code> <code>activation_code</code>.
-      Unknown branch codes are created automatically. Existing roll numbers are skipped, never overwritten.</p>
-      <div id="out"></div>
-    </div>`, "#/import");
-  const drop = $("#drop"), file = $("#file");
-  drop.onclick = () => file.click();
+    <div class="panel"><div class="drop" id="drop"><b>Drop your roster CSV</b>or click to choose
+      <input type="file" id="file" accept=".csv" style="display:none"></div>
+    <p class="note">Required: <code>roll_no</code> <code>email</code> <code>full_name</code> <code>branch_code</code> · optional: <code>cgpa</code> <code>backlogs</code> <code>activation_code</code> + any custom attribute columns you've defined. Existing rolls are skipped.</p>
+    <div id="out"></div></div>`,"#/import");
+  const drop=$("#drop"),file=$("#file");drop.onclick=()=>file.click();
   ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
   ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
-  drop.addEventListener("drop", e => { if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
-  file.onchange = () => { if (file.files[0]) upload(file.files[0]); };
-
-  async function upload(f){
-    $("#out").innerHTML = `<p class="note">Uploading ${esc(f.name)}…</p>`;
-    const fd = new FormData(); fd.append("file", f);
-    try{
-      const r = await api("/api/admin/students/import", {method:"POST", body: fd});
-      let html = `<div class="result-summary">
-        <div class="pill good"><b>${r.imported}</b>imported</div>
-        <div class="pill mid"><b>${r.skipped_existing}</b>already existed</div>
-        <div class="pill ${r.errors.length?'bad':'good'}"><b>${r.errors.length}</b>rows with errors</div>
-      </div>`;
-      if (r.created_branches.length) html += `<p class="note">Created new branches: ${r.created_branches.map(esc).join(", ")}</p>`;
-      if (r.errors.length) html += `<ul class="errlist">${r.errors.map(e=>`<li>Row ${e.row}: ${esc(e.error)}</li>`).join("")}</ul>`;
-      if (r.activation_codes.length){
-        html += `<p class="note" style="margin-top:16px">Each imported student got an activation code. Download and distribute them — this list is also available any time from the Students page.</p>
-        <button class="btn btn-primary" id="dl" style="margin-top:10px">Download ${r.activation_codes.length} activation codes (CSV)</button>`;
-      }
-      $("#out").innerHTML = html;
-      if (r.activation_codes.length) $("#dl").onclick = () => {
-        const csv = "roll_no,full_name,email,activation_code\n" +
-          r.activation_codes.map(c=>[c.roll_no,c.full_name,c.email,c.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-        a.download="activation-codes.csv"; a.click(); URL.revokeObjectURL(a.href);
-      };
-      toast(`Imported ${r.imported} students`);
-    }catch(e){ $("#out").innerHTML = `<div class="err show">${esc(e.message)}</div>`; }
-  }
+  drop.addEventListener("drop",e=>{if(e.dataTransfer.files[0])up(e.dataTransfer.files[0]);});
+  file.onchange=()=>{if(file.files[0])up(file.files[0]);};
+  async function up(f){$("#out").innerHTML=`<p class="note">Uploading ${esc(f.name)}…</p>`;
+    const fd=new FormData();fd.append("file",f);
+    try{const r=await api("/api/admin/students/import",{method:"POST",body:fd});
+      let h=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px">
+        <span class="chip ok">${r.imported} imported</span><span class="chip warn">${r.skipped_existing} existed</span>
+        <span class="chip ${r.errors.length?'bad':'ok'}">${r.errors.length} errors</span></div>`;
+      if(r.created_branches.length)h+=`<p class="note">New branches: ${r.created_branches.map(esc).join(", ")}</p>`;
+      if(r.errors.length)h+=`<ul class="reasons">${r.errors.map(e=>`<li>Row ${e.row}: ${esc(e.error)}</li>`).join("")}</ul>`;
+      if(r.activation_codes.length)h+=`<button class="btn btn-primary btn-sm" id="dl" style="margin-top:12px">Download ${r.activation_codes.length} activation codes</button>`;
+      $("#out").innerHTML=h;
+      if(r.activation_codes.length)$("#dl").onclick=()=>{const csv="roll_no,full_name,email,activation_code\n"+r.activation_codes.map(c=>[c.roll_no,c.full_name,c.email,c.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+        const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="activation-codes.csv";a.click();URL.revokeObjectURL(a.href);};
+      toast(`Imported ${r.imported}`);}catch(e){$("#out").innerHTML=`<div class="err show">${esc(e.message)}</div>`;}}
 }
 
-async function CompaniesView(){
-  Shell(`<div class="page-h"><h1>${["owner","admin","sub_admin"].includes(AUTH.role)?"Companies":"Drives"}</h1></div>
-    <div class="panel"><table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Eligible branches</th><th>Registered</th><th>Placed</th></tr></thead><tbody id="rows"></tbody></table></div>`, "#/companies");
-  try{
-    const cs = await api("/api/companies");
-    $("#rows").innerHTML = cs.map(c=>`<tr><td>${esc(c.name)}</td>
-      <td><span class="chip ${c.category==='tier1'?'t1':'t2'}">${esc(c.category||'—')}</span></td>
-      <td class="mono">${money(c.package)}</td>
-      <td>${(c.eligible_branches||[]).map(b=>`<span class="chip mut">${esc(b)}</span>`).join(" ")}</td>
-      <td class="mono">${c.registered}</td><td class="mono">${c.placed}</td></tr>`).join("")
-      || `<tr><td colspan="6"><div class="empty"><b>No drives yet</b>Companies your placement cell posts will appear here.</div></td></tr>`;
-  }catch(e){ toast(e.message); }
+async function DrivesAdmin(){
+  Shell(`<div class="page-h"><h1>Drives</h1><button class="btn btn-primary btn-sm" onclick="$('#new').style.display='block'">+ New drive</button></div>
+    <div class="panel" id="new" style="display:none"><div class="panel-t">New drive</div>
+      <div class="grid2"><div><label>Company name</label><input id="nd-n">
+        <label>Category</label><select id="nd-c"><option>tier1</option><option>tier2</option><option>core</option><option>dream</option><option>internship</option></select></div>
+      <div><label>Package (₹/yr)</label><input id="nd-p" type="number" placeholder="1200000">
+        <label>Deadline</label><input id="nd-d" type="datetime-local"></div></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="createDrive()">Create (as draft)</button></div>
+    <div id="list"></div>`,"#/drives-admin");
+  loadDrivesAdmin();
+}
+async function loadDrivesAdmin(){
+  try{const cs=await api("/api/companies");
+    $("#list").innerHTML=cs.map(c=>`<div class="drive-card">
+      <div class="top"><div><span class="nm">${esc(c.name)}</span>
+        <span class="chip ${c.category==='tier1'?'warn':'mut'}" style="margin-left:8px">${esc(c.category||'—')}</span>
+        <span class="chip ${c.status===1?'ok':'gray'}" style="margin-left:6px">${c.status===1?'open':c.status===2?'closed':'draft'}</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pkg">${money(c.package)}</span>
+          <button class="btn btn-ghost btn-sm" onclick="toggleDrive(${c.id},${c.status===1?2:1})">${c.status===1?'Close':'Open'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="RuleBuilder(${c.id},'${esc(c.name)}')">Eligibility</button>
+          <button class="btn btn-ghost btn-sm" onclick="Registrants(${c.id},'${esc(c.name)}')">Pipeline (${c.registered})</button></div></div></div>`).join("")
+    ||`<div class="panel"><div class="empty"><b>No drives</b>Create your first one.</div></div>`;}catch(e){toast(e.message);}
+}
+async function createDrive(){try{await api("/api/admin/companies",{method:"POST",body:JSON.stringify({name:$("#nd-n").value,category:$("#nd-c").value,package:+$("#nd-p").value||null,deadline:$("#nd-d").value||null})});
+  toast("Drive created as draft — set eligibility, then open it");DrivesAdmin();}catch(e){toast(e.message);}}
+async function toggleDrive(id,st){try{await api("/api/admin/companies/"+id,{method:"PATCH",body:JSON.stringify({status:st})});loadDrivesAdmin();}catch(e){toast(e.message);}}
+
+let RB={rows:[],orRows:[],attrs:[]};
+async function RuleBuilder(cid,name){
+  Shell(`<div class="page-h"><h1>Eligibility · ${esc(name)}</h1><a class="btn btn-ghost btn-sm" href="#/drives-admin">← Drives</a></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">Every student must match ALL of these</div>
+        <div id="rb-rows"></div>
+        <button class="btn btn-ghost btn-sm" onclick="rbAdd(false)">+ condition</button>
+        <div class="or-block"><div class="t">…AND at least ONE of these (optional)</div>
+          <div id="rb-or"></div>
+          <button class="btn btn-ghost btn-sm" onclick="rbAdd(true)">+ alternative</button></div>
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="rbSave(${cid})">Save rules</button>
+          <button class="btn btn-mint btn-sm" onclick="rbPreview(${cid})">Preview eligible count</button>
+          <span class="chip mut" id="rb-prev" style="display:none"></span></div>
+      </div>
+      <div class="panel"><div class="panel-t">Plain English</div><div id="rb-eng" class="note" style="font-size:13.5px;margin:0"></div>
+        <div class="panel-t" style="margin-top:18px">Add a custom attribute</div>
+        <div style="display:flex;gap:8px"><input id="at-k" placeholder="key e.g. twelfth_pct"><select id="at-t" style="max-width:110px"><option>number</option><option>text</option><option>boolean</option></select></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addAttr(${cid},'${esc(name)}')">Add to registry</button>
+        <p class="note">Attributes come from roster import columns or approved edit requests. Rules save as data — no code, no deploys.</p></div>
+    </div>`,"#/drives-admin");
+  RB={rows:[],orRows:[],attrs:await api("/api/admin/attributes")};
+  try{ // preload existing rules so editing never starts blank
+    const t=await api(`/api/admin/companies/${cid}/rules`);
+    if(t&&t.all){for(const n of t.all){
+      if(n.field)RB.rows.push({field:n.field,op:n.op,value:Array.isArray(n.value)?n.value.join(","):String(n.value)});
+      else if(n.any)for(const l of n.any)if(l.field)RB.orRows.push({field:l.field,op:l.op,value:Array.isArray(l.value)?l.value.join(","):String(l.value)});}}
+  }catch{}
+  for(const r of [...RB.rows,...RB.orRows])   // unknown fields render as themselves
+    if(!RB.attrs.find(a=>a.key===r.field))RB.attrs.push({key:r.field,label:r.field.replace(/_/g," "),data_type:"number"});
+  rbRender();
+}
+function rbOpts(sel){return RB.attrs.map(a=>`<option value="${a.key}" ${a.key===sel?'selected':''}>${esc(a.label)}</option>`).join("");}
+function rbRowHTML(list,i,r){return `<div class="rule-row">
+  <select onchange="RB.${list}[${i}].field=this.value;rbEng()">${rbOpts(r.field)}</select>
+  <select onchange="RB.${list}[${i}].op=this.value;rbEng()">${[">=","<=","==","!=","in","not_in"].map(o=>`<option ${o===r.op?'selected':''}>${o}</option>`).join("")}</select>
+  <input value="${esc(r.value)}" placeholder="value (comma-sep for in)" oninput="RB.${list}[${i}].value=this.value;rbEng()">
+  <button class="x" onclick="RB.${list}.splice(${i},1);rbRender()">✕</button></div>`;}
+function rbRender(){
+  $("#rb-rows").innerHTML=RB.rows.map((r,i)=>rbRowHTML("rows",i,r)).join("")||`<p class="note">No conditions yet — everyone qualifies.</p>`;
+  $("#rb-or").innerHTML=RB.orRows.map((r,i)=>rbRowHTML("orRows",i,r)).join("")||`<p class="note" style="margin:0">None.</p>`;
+  rbEng();
+}
+function rbAdd(or){(or?RB.orRows:RB.rows).push({field:RB.attrs[0].key,op:">=",value:""});rbRender();}
+function rbEng(){
+  const say=r=>{const a=RB.attrs.find(x=>x.key===r.field);return `${a?a.label:r.field} ${r.op} ${r.value||"…"}`;};
+  let t=RB.rows.map(say).join(", AND ")||"anyone";
+  if(RB.orRows.length)t+=`, AND at least one of: ${RB.orRows.map(say).join(" / ")}`;
+  $("#rb-eng").textContent=t;
+}
+function rbTree(){
+  const leaf=r=>{const a=RB.attrs.find(x=>x.key===r.field);const num=a&&a.data_type==="number";
+    let v=r.value;if(["in","not_in"].includes(r.op))v=v.split(",").map(s=>s.trim()).filter(Boolean);
+    else if(num)v=parseFloat(v);else if(a&&a.data_type==="boolean")v=v==="true";
+    return {field:r.field,op:r.op,value:v,label:a?a.label:r.field};};
+  const all=RB.rows.map(leaf);
+  if(RB.orRows.length)all.push({any:RB.orRows.map(leaf)});
+  return all.length?{all}:null;
+}
+async function rbSave(cid){try{await api(`/api/admin/companies/${cid}/rules`,{method:"PUT",body:JSON.stringify({rules:rbTree()})});toast("Rules saved");}catch(e){toast(e.message);}}
+async function rbPreview(cid){try{await rbSave(cid);const p=await api(`/api/admin/companies/${cid}/eligibility-preview`);
+  const el=$("#rb-prev");el.style.display="inline-block";el.textContent=`${p.eligible} of ${p.total} students eligible`;}catch(e){toast(e.message);}}
+async function addAttr(cid,name){try{const k=$("#at-k").value;await api("/api/admin/attributes",{method:"POST",body:JSON.stringify({key:k,label:k.replace(/_/g," "),data_type:$("#at-t").value})});
+  toast("Attribute added");RuleBuilder(cid,name);}catch(e){toast(e.message);}}
+
+async function Registrants(cid,name){
+  Shell(`<div class="page-h"><h1>Pipeline · ${esc(name)}</h1><a class="btn btn-ghost btn-sm" href="#/drives-admin">← Drives</a></div>
+    <div class="panel"><table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Resume</th><th>Round</th><th>Status</th></tr></thead><tbody id="regs"></tbody></table></div>`,"#/drives-admin");
+  try{const rows=await api(`/api/admin/companies/${cid}/registrations`);
+    $("#regs").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
+      <td><span class="chip gray">${esc(r.branch)}</span></td><td class="mono">${r.cgpa??"—"}</td>
+      <td>${r.has_resume?'<span class="chip ok">✓</span>':'<span class="chip bad">✕</span>'}</td>
+      <td><select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'current_round',this.value,${cid},'${esc(name)}')">
+        ${ROUNDS.map(x=>`<option value="${x}" ${x===r.current_round?'selected':''}>${RL[x]}</option>`).join("")}</select></td>
+      <td><select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'status',this.value,${cid},'${esc(name)}')">
+        ${["active","placed","rejected","withdrawn"].map(x=>`<option ${x===r.status?'selected':''}>${x}</option>`).join("")}</select></td></tr>`).join("")
+    ||`<tr><td colspan="7"><div class="empty"><b>No registrations yet</b></div></td></tr>`;}catch(e){toast(e.message);}
+}
+async function advApp(id,k,v,cid,name){try{await api("/api/admin/applications/"+id,{method:"PATCH",body:JSON.stringify({[k]:v})});
+  toast(v==="placed"?"Placed — offer recorded 🎉":"Updated");if(v==="placed")Registrants(cid,name);}catch(e){toast(e.message);}}
+
+async function PolicyView(){
+  Shell(`<div class="page-h"><h1>Placement policy</h1></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">College-wide rules</div>
+        <div class="switch"><input type="checkbox" id="p-one"><label style="margin:0">One offer per student (strict)</label></div>
+        <label>Maximum offers per student (blank = no cap)</label><input id="p-max" type="number" min="1">
+        <label>Upgrade rule after an offer</label>
+        <select id="p-up"><option value="none">None — anyone can keep sitting</option>
+          <option value="multiplier">Multiplier — must pay ≥ N× current best</option>
+          <option value="higher_slab">Salary slabs — higher slab only</option>
+          <option value="both">Both (strictest)</option></select>
+        <label>Multiplier (e.g. 1.5)</label><input id="p-mult" type="number" step="0.1" value="1.5">
+        <label>Slabs (LPA caps, comma-sep; last is open) e.g. 5,10</label><input id="p-slabs" placeholder="5,10">
+        <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="savePolicy()">Save policy</button>
+      </div>
+      <div class="panel"><div class="panel-t">How it plays out</div>
+        <p class="note" style="font-size:13.5px;margin:0">A student placed at ₹6 LPA:<br><br>
+        · <b>Multiplier 1.5×</b> → can only register for drives paying ≥ ₹9 LPA.<br>
+        · <b>Slabs 5,10</b> → they're in slab 2 (5–10), so only slab 3 (&gt;10 LPA) drives.<br>
+        · <b>One offer</b> → they're done for the season.<br><br>
+        Blocked students see the exact rule in their Drives page — no more "why can't I register" queues at your desk.</p></div>
+    </div>`,"#/policy");
+  try{const p=await api("/api/admin/policy");
+    $("#p-one").checked=!!p.one_offer;$("#p-max").value=p.max_offers||"";
+    $("#p-up").value=p.upgrade||"none";$("#p-mult").value=p.multiplier||1.5;
+    $("#p-slabs").value=(p.slabs||[]).filter(s=>s.max_lpa).map(s=>s.max_lpa).join(",");}catch(e){toast(e.message);}
+}
+async function savePolicy(){
+  const caps=$("#p-slabs").value.split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+  const slabs=caps.map((c,i)=>({name:"S"+(i+1),max_lpa:c}));if(caps.length)slabs.push({name:"S"+(caps.length+1)});
+  try{await api("/api/admin/policy",{method:"PUT",body:JSON.stringify({one_offer:$("#p-one").checked,
+    max_offers:+$("#p-max").value||null,upgrade:$("#p-up").value,multiplier:+$("#p-mult").value||null,slabs})});
+    toast("Policy saved — applies to every drive instantly");}catch(e){toast(e.message);}}
+
+async function NotesView(){
+  Shell(`<div class="page-h"><h1>Notes &amp; calendar</h1></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-t">Schedule</div><div id="cal"></div></div>
+      <div class="panel"><div class="panel-t">Add</div>
+        <label>Date</label><input id="n-d" type="date">
+        <label>Type</label><select id="n-k"><option>visit</option><option>test</option><option>deadline</option><option>note</option></select>
+        <label>Title</label><input id="n-t" placeholder="Zentrix pre-placement talk">
+        <label>Details</label><textarea id="n-b" style="min-height:60px"></textarea>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="addNote()">Add to calendar</button></div>
+    </div>`,"#/notes");
+  loadNotes();
+}
+async function loadNotes(){try{const ns=await api("/api/admin/notes");
+  $("#cal").innerHTML=ns.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
+    <div style="flex:1"><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
+      <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}
+      ${n.body?`<div class="note" style="margin-top:3px">${esc(n.body)}</div>`:""}</div>
+    <button style="border:0;background:transparent;color:var(--rose);cursor:pointer;font-size:15px" onclick="delNote(${n.id})">✕</button></div>`).join("")
+  ||`<div class="empty"><b>Empty calendar</b>Add company visits, tests, deadlines.</div>`;}catch(e){toast(e.message);}}
+async function addNote(){try{await api("/api/admin/notes",{method:"POST",body:JSON.stringify({note_date:$("#n-d").value,kind:$("#n-k").value,title:$("#n-t").value,body:$("#n-b").value})});
+  toast("Added");loadNotes();}catch(e){toast(e.message);}}
+async function delNote(id){try{await api("/api/admin/notes/"+id,{method:"DELETE"});loadNotes();}catch(e){toast(e.message);}}
+
+async function AnalyticsView(){
+  Shell(`<div class="page-h"><h1>Analytics</h1><button class="btn btn-ghost btn-sm" id="ex">Export report CSV</button></div>
+    <div class="stat-row" id="st"></div>
+    <div class="stat-row" id="st2" style="grid-template-columns:repeat(3,1fr)"></div>
+    <div class="grid2">
+      <div>
+        <div class="panel"><div class="panel-t">Branch performance</div>
+          <table><thead><tr><th>Branch</th><th>Placed</th><th>Rate</th><th>Avg pkg</th></tr></thead><tbody id="bw"></tbody></table></div>
+        <div class="panel"><div class="panel-t">Drive conversion</div>
+          <table><thead><tr><th>Company</th><th>Reg</th><th>Active</th><th>Placed</th><th>Conv</th></tr></thead><tbody id="dc"></tbody></table></div>
+      </div>
+      <div>
+        <div class="panel"><div class="panel-t">CTC distribution (offers)</div><div id="ctc"></div>
+          <div class="panel-t" style="margin-top:18px">Offers by month</div><div id="tl"></div></div>
+        <div class="panel"><div class="panel-t">Live round funnel</div><div id="rf"></div>
+          <div class="panel-t" style="margin-top:18px">Top offers</div><div id="top"></div></div>
+      </div>
+    </div>`,"#/analytics");
+  try{const a=await api("/api/admin/analytics");const o=a.overview;
+    $("#st").innerHTML=[["Placement rate",o.placement_rate+"%"],["Placed / students",o.placed+" / "+o.students],
+      ["Avg package",money(a.package.avg)],["Highest",money(a.package.max)]]
+      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:22px">${v}</div></div>`).join("");
+    const ai=a.action_items, cg=a.cgpa_insight;
+    $("#st2").innerHTML=[
+      [`Never applied`,ai.never_applied,ai.never_applied>0?"var(--rose)":"var(--mint)"],
+      [`No resume yet`,ai.no_resume,ai.no_resume>0?"var(--amber)":"var(--mint)"],
+      [`CGPA placed vs rest`,cg.placed_avg+" vs "+cg.unplaced_avg,"var(--acc)"]]
+      .map(([k,v,c])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:22px;color:${c}">${v}</div></div>`).join("");
+    $("#bw").innerHTML=a.branch_wise.map(b=>{const r=b.students?Math.round(100*b.placed/b.students):0;
+      return `<tr><td><span class="chip gray">${esc(b.branch)}</span></td><td class="mono">${b.placed}/${b.students}</td>
+      <td><div class="track" style="height:8px;width:70px;display:inline-block;background:var(--line);border-radius:5px;overflow:hidden;vertical-align:middle"><div class="fill mint" style="width:${r}%;height:100%"></div></div> <span class="mono" style="font-size:12px">${r}%</span></td>
+      <td class="mono">${b.avg_package?money(b.avg_package):"—"}</td></tr>`;}).join("");
+    $("#dc").innerHTML=a.drive_conversion.map(d=>{const cv=d.registered?Math.round(100*d.placed/d.registered):0;
+      return `<tr><td>${esc(d.name)} <span class="chip ${d.status===1?'ok':'gray'}" style="font-size:10px">${d.status===1?'open':d.status===2?'closed':'draft'}</span></td>
+      <td class="mono">${d.registered}</td><td class="mono">${d.in_process}</td><td class="mono">${d.placed}</td>
+      <td class="mono" style="color:${cv>0?'var(--mint)':'var(--mut)'}">${cv}%</td></tr>`;}).join("");
+    const BUCK=["< 5 LPA","5–10 LPA","10–15 LPA","15+ LPA"];
+    const dist=[0,1,2,3].map(i=>({label:BUCK[i],n:(a.ctc_distribution.find(x=>x.bucket===i)||{}).offers||0}));
+    const dmx=Math.max(...dist.map(d=>d.n),1);
+    $("#ctc").innerHTML=dist.map(d=>`<div class="bar"><span class="lbl">${d.label}</span>
+      <div class="track"><div class="fill" style="width:${(d.n/dmx*100).toFixed(0)}%"></div></div><span class="n">${d.n}</span></div>`).join("");
+    const tmx=Math.max(...a.timeline.map(t=>t.offers),1);
+    $("#tl").innerHTML=a.timeline.map(t=>`<div class="bar"><span class="lbl">${esc(t.month)}</span>
+      <div class="track"><div class="fill mint" style="width:${(t.offers/tmx*100).toFixed(0)}%"></div></div><span class="n">${t.offers}</span></div>`).join("")||`<p class="note">No offers yet.</p>`;
+    const rmx=Math.max(...a.round_funnel.map(r=>r.count),1);
+    $("#rf").innerHTML=ROUNDS.filter(x=>a.round_funnel.find(r=>r.round===x)).map(x=>{const n=a.round_funnel.find(r=>r.round===x).count;
+      return `<div class="bar"><span class="lbl">${RL[x]}</span><div class="track"><div class="fill" style="width:${(n/rmx*100).toFixed(0)}%"></div></div><span class="n">${n}</span></div>`;}).join("")||`<p class="note">No active applications.</p>`;
+    $("#top").innerHTML=a.top_offers.slice(0,5).map(t=>`<div class="kv"><span class="k">${esc(t.full_name)} · ${esc(t.company)}</span><span class="v mono">${money(t.package)}</span></div>`).join("")||`<p class="note">—</p>`;
+    $("#ex").onclick=()=>{let csv="section,key,value\n";
+      csv+=Object.entries(o).map(([k,v])=>`overview,${k},${v}`).join("\n")+"\n";
+      csv+=a.branch_wise.map(b=>`branch,${b.branch},${b.placed}/${b.students} avg=${b.avg_package}`).join("\n")+"\n";
+      csv+=a.drive_conversion.map(d=>`drive,${d.name.replace(/,/g,";")},reg=${d.registered} placed=${d.placed}`).join("\n");
+      const el=document.createElement("a");el.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));el.download="placement-report.csv";el.click();};
+  }catch(e){toast(e.message);}
 }
 
-async function StudentHomeView(){
-  Shell(`<div class="page-h"><h1>My placements</h1><span class="crumb" id="cname"></span></div>
-    <div class="panel"><div class="panel-t">My applications</div>
-    <table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Current stage</th><th>Status</th></tr></thead><tbody id="apps"></tbody></table></div>`, "#/home");
-  try{
-    const me = await api("/api/auth/me"); $("#cname").textContent = me.college?.name || "";
-    const apps = await api("/api/me/applications");
-    $("#apps").innerHTML = apps.map(a=>`<tr><td>${esc(a.company)}</td>
-      <td><span class="chip ${a.category==='tier1'?'t1':'t2'}">${esc(a.category||'—')}</span></td>
-      <td class="mono">${money(a.package)}</td>
-      <td>${ROUND_LABELS[a.current_round]||esc(a.current_round)}</td>
-      <td>${a.status==='placed'?'<span class="chip ok">placed</span>':a.status==='rejected'?'<span class="chip warn">not selected</span>':'<span class="chip mut">in progress</span>'}</td></tr>`).join("")
-      || `<tr><td colspan="5"><div class="empty"><b>No applications yet</b>Register for a drive from the Drives page when one opens.</div></td></tr>`;
-  }catch(e){ toast(e.message); }
+async function QAAdmin(){
+  Shell(`<div class="page-h"><h1>Q&amp;A inbox</h1><span class="crumb">CRs escalate · PO answers</span></div>
+    <div class="panel" id="qs"></div>`,"#/qa-admin");
+  try{const qs=await api("/api/admin/questions");
+    $("#qs").innerHTML=qs.map(q=>`<div class="qa-item">
+      <div class="t">${esc(q.title)} <span class="chip gray" style="margin-left:6px">${esc(q.branch||"")} · ${esc(q.roll_no||"")}</span>
+        <span class="chip ${q.status==='answered'?'ok':q.status==='escalated'?'warn':'gray'}" style="margin-left:6px">${q.status}</span></div>
+      ${q.body?`<div class="b">${esc(q.body)}</div>`:""}
+      ${q.answer?`<div class="ans">${esc(q.answer)}</div>`:`
+        <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
+          ${q.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="modQ(${q.id},'escalate')">Escalate to PO</button>`:""}
+          ${AUTH.role!=='sub_admin'?`<input id="ans-${q.id}" placeholder="Answer…" style="max-width:340px">
+          <button class="btn btn-primary btn-sm" onclick="modQ(${q.id},'answer')">Answer &amp; publish</button>`:""}</div>`}
+    </div>`).join("")||`<div class="empty"><b>Inbox zero</b></div>`;}catch(e){toast(e.message);}
 }
+async function modQ(id,action){const body={action};if(action==="answer")body.answer=$("#ans-"+id).value;
+  try{await api("/api/admin/questions/"+id,{method:"PATCH",body:JSON.stringify(body)});toast(action==="answer"?"Published to all students":"Escalated");QAAdmin();}catch(e){toast(e.message);}}
 
-/* =============================== router ================================ */
-const ROUTES = {
-  "#/login": LoginView, "#/dashboard": DashboardView, "#/students": StudentsView,
-  "#/import": ImportView, "#/companies": CompaniesView, "#/home": StudentHomeView,
-};
-function enterApp(){ location.hash = ["owner","admin","sub_admin"].includes(AUTH.role) ? "#/dashboard" : "#/home"; render(); }
+async function EditsAdmin(){
+  Shell(`<div class="page-h"><h1>Edit requests</h1></div><div class="panel" id="er2"></div>`,"#/edits");
+  try{const rs=await api("/api/admin/edit-requests");
+    $("#er2").innerHTML=rs.map(r=>`<div class="qa-item">
+      <div class="t">${esc(r.full_name)} <span class="chip gray">${esc(r.roll_no)}</span>
+        <span class="chip ${r.status==='approved'?'ok':r.status==='rejected'?'bad':'warn'}" style="margin-left:6px">${r.status}</span></div>
+      <div class="b">${esc(r.field)}: <s>${esc(r.current_value||"—")}</s> → <b>${esc(r.requested_value)}</b>${r.note?` · "${esc(r.note)}"`:""}</div>
+      ${r.status==='pending'?`<div style="display:flex;gap:8px;margin-top:9px">
+        <button class="btn btn-mint btn-sm" onclick="decideEdit(${r.id},'approved')">Approve &amp; apply</button>
+        <button class="btn btn-ghost btn-sm" onclick="decideEdit(${r.id},'rejected')">Reject</button></div>`:""}
+    </div>`).join("")||`<div class="empty"><b>No requests</b></div>`;}catch(e){toast(e.message);}
+}
+async function decideEdit(id,d){try{await api("/api/admin/edit-requests/"+id,{method:"PATCH",body:JSON.stringify({decision:d})});
+  toast(d==="approved"?"Applied to the roster":"Rejected");EditsAdmin();}catch(e){toast(e.message);}}
+
+/* ============================ router ============================ */
+const ROUTES={"#/login":LoginView,"#/dashboard":Dashboard,"#/students":StudentsView,"#/import":ImportView,
+  "#/drives-admin":DrivesAdmin,"#/policy":PolicyView,"#/notes":NotesView,"#/analytics":AnalyticsView,
+  "#/qa-admin":QAAdmin,"#/edits":EditsAdmin,
+  "#/home":StudentHome,"#/drives":DrivesStudent,"#/profile":ProfileView,"#/qa":QAStudent,"#/feedback":FeedbackView};
+const STAFF_ONLY=["#/dashboard","#/students","#/import","#/drives-admin","#/policy","#/notes","#/analytics","#/qa-admin","#/edits"];
+function enterApp(){location.hash=isStaff()?"#/dashboard":"#/home";render();}
 function render(){
-  const isStaff = AUTH && ["owner","admin","sub_admin"].includes(AUTH.role);
-  let h = location.hash || "";
-  if (!AUTH) h = "#/login";
-  else if (!ROUTES[h] || h === "#/login") h = isStaff ? "#/dashboard" : "#/home";
-  else if (!isStaff && ["#/dashboard","#/students","#/import"].includes(h)) h = "#/home";
-  if (location.hash !== h) { location.hash = h; return; }
+  let h=location.hash||"";
+  if(!AUTH)h="#/login";
+  else if(!ROUTES[h]||h==="#/login")h=isStaff()?"#/dashboard":"#/home";
+  else if(!isStaff()&&STAFF_ONLY.includes(h))h="#/home";
+  if(location.hash!==h){location.hash=h;return;}
   ROUTES[h]();
 }
-window.addEventListener("hashchange", render);
-(async () => {
-  try { CFG = await api("/api/auth/config"); } catch { /* backend down: password form still renders */ }
-  render();
-})();
+window.addEventListener("hashchange",render);
+(async()=>{try{CFG=await api("/api/auth/config");}catch{}render();})();
 </script>
 </body>
 </html>

@@ -1,3 +1,30 @@
+import json
+import os
+
+
+def _load_from_secrets_manager() -> None:
+    """If AWS_SECRET_NAME is set, pull ONE JSON secret from AWS Secrets
+    Manager and export its keys as env vars (existing env always wins).
+    One consolidated secret = $0.40/month — the whole app's config for
+    less than a chai. Falls back silently to .env when unavailable, so
+    local dev never needs AWS."""
+    name = os.getenv("AWS_SECRET_NAME")
+    if not name:
+        return
+    try:
+        import boto3
+        client = boto3.client("secretsmanager",
+                              region_name=os.getenv("AWS_REGION", "ap-south-1"))
+        blob = client.get_secret_value(SecretId=name)["SecretString"]
+        for k, v in json.loads(blob).items():
+            os.environ.setdefault(k.upper(), str(v))
+        print(f"[config] loaded {name} from Secrets Manager")
+    except Exception as exc:  # noqa: BLE001 — any failure => env fallback
+        print(f"[config] Secrets Manager unavailable ({exc}); using env/.env")
+
+
+_load_from_secrets_manager()
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
