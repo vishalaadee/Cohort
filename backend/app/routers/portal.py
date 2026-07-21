@@ -342,4 +342,4 @@ def my_score(claims: Claims = Depends(get_claims)):
         conn.execute(text("UPDATE students SET cohort_score = CAST(:s AS jsonb) WHERE user_id = :u"),
                      {"s": json.dumps(score), "u": claims.user_id})
     return {**score, "consent_recruiter_share": row["consent_recruiter_share"]}
->>>>>>> Stashed changes
+
