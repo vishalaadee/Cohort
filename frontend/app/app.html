@@ -185,14 +185,32 @@ applyTheme(localStorage.getItem(THEME_KEY)||(matchMedia("(prefers-color-scheme: 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200);}
 function saveAuth(a){AUTH=a;localStorage.setItem("cohort_auth",JSON.stringify(a));}
 function signOut(){localStorage.removeItem("cohort_auth");AUTH=null;location.hash="#/login";render();}
+class ApiError extends Error{
+  constructor(message,{status=0,code="request_failed",fields={}}={}){super(message);this.name="ApiError";this.status=status;this.code=code;this.fields=fields;}
+}
+const STATUS_MESSAGE={400:"Check the information and try again.",401:"Sign in to continue.",403:"You do not have permission to do that.",404:"We could not find that item.",409:"This action conflicts with the current information.",422:"Check the highlighted fields.",429:"Too many attempts. Please wait a few minutes and try again.",500:"Something went wrong on our side. Please try again.",503:"The service is being updated. Please try again shortly."};
+function errorFromResponse(data,status){
+  const err=data&&typeof data.error==="object"?data.error:null;
+  if(err)return new ApiError(typeof err.message==="string"?err.message:(STATUS_MESSAGE[status]||"We could not complete that request."),{status,code:err.code,fields:err.fields&&typeof err.fields==="object"?err.fields:{}});
+  // Compatibility with an older server during a rolling deployment. Only
+  // accept a plain string detail; never render a raw FastAPI error array.
+  const legacy=data&&typeof data.detail==="string"?data.detail:null;
+  return new ApiError(legacy||STATUS_MESSAGE[status]||"We could not complete that request.",{status});
+}
+function displayError(err){return err instanceof ApiError?err.message:"We could not complete that request. Check your connection and try again.";}
 async function api(path,opts={}){
-  const headers=opts.headers||{};
+  const headers={...(opts.headers||{})};
   if(AUTH?.token)headers["Authorization"]="Bearer "+AUTH.token;
   if(opts.body&&!(opts.body instanceof FormData))headers["Content-Type"]="application/json";
-  const r=await fetch(path,{...opts,headers});
-  if(r.status===401&&AUTH){signOut();throw new Error("Session expired — sign in again");}
+  let r;
+  try{r=await fetch(path,{...opts,headers});}
+  catch{throw new ApiError("We can’t reach Cohort right now. Check your connection and try again.",{code:"network_error"});}
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(d.detail||("Request failed ("+r.status+")"));
+  if(!r.ok){
+    const err=errorFromResponse(d,r.status);
+    if(r.status===401&&AUTH){signOut();throw new ApiError("Your session expired — sign in again.",{status:401,code:"session_expired"});}
+    throw err;
+  }
   return d;
 }
 const money=v=>v==null?"—":"₹"+(v/100000).toFixed(1)+"\u00A0LPA";
@@ -214,7 +232,7 @@ function LoginView(){
       <div class="tabs"><button id="tab-in" class="on">Sign in</button><button id="tab-claim">Claim account</button></div>
       <div id="pane-in">
         <h2>Welcome back</h2>
-        <p class="hint">College Google account, or email &amp; password.</p>
+        <p class="hint">College Google account, or email &amp; password. First time here? Choose <b>Claim account</b> first.</p>
         <div id="gbtn"></div><div class="divider" id="gdiv">OR</div>
         <label for="li-email">Email</label><input id="li-email" type="email" autocomplete="email" placeholder="you@college.ac.in">
         <label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
@@ -223,12 +241,12 @@ function LoginView(){
       </div>
       <div id="pane-claim" style="display:none">
         <h2>Claim your account</h2>
-        <p class="hint">First time here? Use the activation code from your placement cell.</p>
-        <label>College code</label><input id="cl-college" placeholder="e.g. gnc" autocapitalize="none">
-        <label>Roll number</label><input id="cl-roll" placeholder="e.g. 01GNC22CS001" autocapitalize="characters">
-        <label>Activation code</label><input id="cl-code" placeholder="8-character code" autocapitalize="characters">
+        <p class="hint">Use the activation code from your placement cell once. You will be signed in as a student immediately after activation.</p>
+        <label for="cl-college">College code</label><input id="cl-college" placeholder="e.g. gnc" autocapitalize="none" autocomplete="organization">
+        <label for="cl-roll">Roll number</label><input id="cl-roll" placeholder="e.g. 01GNC22CS001" autocapitalize="characters" autocomplete="username">
+        <label for="cl-code">Activation code</label><input id="cl-code" placeholder="8-character code" autocapitalize="characters" autocomplete="one-time-code">
         <label>Choose a password <span style="color:var(--mut);font-weight:400">(min 8 chars)</span></label>
-        <input id="cl-pass" type="password" autocomplete="new-password">
+        <input id="cl-pass" type="password" autocomplete="new-password" minlength="8">
         <div class="err" id="cl-err"></div>
         <button class="btn btn-primary" id="cl-go" style="width:100%;margin-top:16px">Claim account &amp; sign in</button>
       </div>
@@ -241,28 +259,40 @@ function LoginView(){
     const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;
     s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:async resp=>{
       try{saveAuth(await api("/api/auth/google",{method:"POST",body:JSON.stringify({credential:resp.credential})}));enterApp();}
-      catch(e){sErr("#li-err",e.message);}}});
+      catch(e){sErr("#li-err",e);}}});
       google.accounts.id.renderButton($("#gbtn"),{theme:"outline",size:"large",width:366,text:"continue_with"});};
     document.head.appendChild(s);
   }else{$("#gbtn").style.display="none";$("#gdiv").style.display="none";}
-  const sErr=(sel,m)=>{const e=$(sel);e.textContent=m;e.classList.add("show");};
+  const sErr=(sel,m)=>{const e=$(sel);e.textContent=displayError(m);e.classList.add("show");};
   $("#li-go").onclick=async()=>{$("#li-err").classList.remove("show");$("#li-go").disabled=true;
-    try{saveAuth(await api("/api/auth/login",{method:"POST",body:JSON.stringify({email:$("#li-email").value.trim(),password:$("#li-pass").value})}));enterApp();}
-    catch(e){sErr("#li-err",e.message);}finally{$("#li-go").disabled=false;}};
+    const email=$("#li-email").value.trim(),password=$("#li-pass").value;
+    if(!email){sErr("#li-err","Enter your college email.");$("#li-go").disabled=false;return;}
+    if(!/^\S+@\S+\.\S+$/.test(email)){sErr("#li-err","Enter a valid email address.");$("#li-go").disabled=false;return;}
+    if(!password){sErr("#li-err","Enter your password.");$("#li-go").disabled=false;return;}
+    try{saveAuth(await api("/api/auth/login",{method:"POST",body:JSON.stringify({email,password})}));enterApp();}
+    catch(e){sErr("#li-err",e);}finally{$("#li-go").disabled=false;}};
   $("#li-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#li-go").click();});
   $("#cl-go").onclick=async()=>{$("#cl-err").classList.remove("show");$("#cl-go").disabled=true;
-    try{saveAuth(await api("/api/auth/claim",{method:"POST",body:JSON.stringify({college_slug:$("#cl-college").value.trim(),roll_no:$("#cl-roll").value.trim(),activation_code:$("#cl-code").value.trim(),password:$("#cl-pass").value})}));toast("Account created — welcome!");enterApp();}
-    catch(e){sErr("#cl-err",e.message);}finally{$("#cl-go").disabled=false;}};
+    const college_slug=$("#cl-college").value.trim(),roll_no=$("#cl-roll").value.trim(),activation_code=$("#cl-code").value.trim(),password=$("#cl-pass").value;
+    if(!college_slug||!roll_no||!activation_code){sErr("#cl-err","Enter your college code, roll number, and activation code.");$("#cl-go").disabled=false;return;}
+    if(password.length<8){sErr("#cl-err","Choose a password with at least 8 characters.");$("#cl-go").disabled=false;return;}
+    try{saveAuth(await api("/api/auth/claim",{method:"POST",body:JSON.stringify({college_slug,roll_no,activation_code,password})}));toast("Account activated — welcome!");enterApp();}
+    catch(e){sErr("#cl-err",e);}finally{$("#cl-go").disabled=false;}};
+  $("#cl-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#cl-go").click();});
 }
 
 /* ============================ shell ============================ */
-const STAFF_NAV=[["Manage",[["#/dashboard","D","Dashboard"],["#/students","R","Students"],["#/import","↥","Import roster"],["#/drives-admin","C","Drives"]]],
+const ADMIN_NAV=[["Manage",[["#/dashboard","D","Dashboard"],["#/students","R","Students"],["#/import","↥","Import roster"],["#/drives-admin","C","Drives"]]],
                  ["Configure",[["#/policy","P","Placement policy"],["#/notes","N","Notes & calendar"]]],
                  ["Insights",[["#/analytics","A","Analytics"],["#/qa-admin","Q","Q&A inbox"],["#/edits","E","Edit requests"]]]];
+const CR_NAV=[["My branch",[["#/dashboard","D","Branch dashboard"],["#/students","R","Students"],["#/drives-admin","C","Drive pipeline"]]],
+              ["Student support",[["#/qa-admin","Q","Questions to escalate"]]]];
 const STUDENT_NAV=[["Placements",[["#/home","H","My placements"],["#/drives","C","Drives"],["#/feedback","F","Experiences"]]],
                    ["You",[["#/profile","U","Profile"],["#/qa","Q","Q&A"]]]];
+const isPlacementOfficer=()=>AUTH&&["owner","admin"].includes(AUTH.role);
 function Shell(html,active){
-  const groups=(isStaff()?STAFF_NAV:STUDENT_NAV).map(([g,items])=>
+  const navigation=AUTH?.role==="sub_admin"?CR_NAV:(isStaff()?ADMIN_NAV:STUDENT_NAV);
+  const groups=navigation.map(([g,items])=>
     `<div class="grp">${g}</div>`+items.map(([h,ic,l])=>`<a href="${h}" class="${h===active?'on':''}"><span class="ic">${ic}</span>${l}</a>`).join("")).join("");
   root.innerHTML=`
   <div class="shell">
@@ -422,35 +452,40 @@ async function sendFb(){try{await api("/api/me/feedback",{method:"POST",body:JSO
 
 /* ====================== admin views ====================== */
 async function Dashboard(){
-  Shell(`<div class="page-h"><h1>Dashboard</h1><span class="crumb" id="cn"></span></div>
+  const isCR=AUTH.role==="sub_admin";
+  Shell(`<div class="page-h"><h1>${isCR?"My branch":"Dashboard"}</h1><span class="crumb" id="cn"></span></div>
     <div class="stat-row" id="st"></div>
     <div class="grid2">
       <div class="panel"><div class="panel-t">Pipeline · active</div><div id="fn"></div></div>
-      <div class="panel"><div class="panel-t">Upcoming <a class="btn btn-ghost btn-sm" href="#/notes">calendar →</a></div><div id="up"></div></div>
+      ${isCR?'<div class="panel"><div class="panel-t">Your CR role</div><p class="note" style="font-size:13.5px;margin:0">Keep your branch pipeline current and escalate student questions that need a placement-officer decision.</p><a class="btn btn-ghost btn-sm" style="margin-top:14px" href="#/qa-admin">Open questions →</a></div>':'<div class="panel"><div class="panel-t">Upcoming <a class="btn btn-ghost btn-sm" href="#/notes">calendar →</a></div><div id="up"></div></div>'}
     </div>`,"#/dashboard");
   try{
     const me=await api("/api/auth/me");$("#cn").textContent=me.college?.name||"";
     const d=await api("/api/dashboard/stats");const t=d.totals;
-    $("#st").innerHTML=[["Students",t.students],["Drives",t.companies],["Applications",t.applications],["Placed",`${t.placed} <small>${d.placement_rate}%</small>`]]
+    const labels=d.scope==="branch"?["Students in my branch","College drives","Branch applications","Placed in my branch"]:["Students","Drives","Applications","Placed"];
+    $("#st").innerHTML=[[labels[0],t.students],[labels[1],t.companies],[labels[2],t.applications],[labels[3],`${t.placed} <small>${d.placement_rate}%</small>`]]
       .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
     const mx=Math.max(...d.funnel.map(f=>f.count),1);
     $("#fn").innerHTML=d.funnel.map(f=>`<div class="bar"><span class="lbl">${RL[f.round]}</span><div class="track"><div class="fill" style="width:0" data-w="${(f.count/mx*100).toFixed(0)}"></div></div><span class="n">${f.count}</span></div>`).join("");
     requestAnimationFrame(()=>document.querySelectorAll("#fn .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
-    const notes=await api("/api/admin/notes");
-    const today=new Date().toISOString().slice(0,10);
-    const up=notes.filter(n=>n.note_date>=today).slice(0,5);
-    $("#up").innerHTML=up.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
-      <div><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
-      <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}</div></div>`).join("")
-      ||`<div class="empty"><b>Nothing scheduled</b>Add visits and deadlines in Notes.</div>`;
+    if(!isCR){
+      const notes=await api("/api/admin/notes");
+      const today=new Date().toISOString().slice(0,10);
+      const up=notes.filter(n=>n.note_date>=today).slice(0,5);
+      $("#up").innerHTML=up.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
+        <div><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
+        <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}</div></div>`).join("")
+        ||`<div class="empty"><b>Nothing scheduled</b>Add visits and deadlines in Notes.</div>`;
+    }
   }catch(e){toast(e.message);}
 }
 
 async function StudentsView(){
-  Shell(`<div class="page-h"><h1>Students</h1><a class="btn btn-primary btn-sm" href="#/import">Import roster</a></div>
+  const canManage=isPlacementOfficer();
+  Shell(`<div class="page-h"><h1>${canManage?"Students":"Students in my branch"}</h1>${canManage?'<a class="btn btn-primary btn-sm" href="#/import">Import roster</a>':''}</div>
     <div class="panel"><div class="toolbar">
       <input type="search" id="q" placeholder="Search roll, name, email…">
-      <button class="btn btn-ghost btn-sm" id="codes">Unclaimed activation codes</button></div>
+      ${canManage?'<button class="btn btn-ghost btn-sm" id="codes">Unclaimed activation codes</button>':''}</div>
       <table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Login</th></tr></thead><tbody id="rows"></tbody></table></div>`,"#/students");
   const load=async q=>{try{const rows=await api("/api/admin/students"+(q?"?q="+encodeURIComponent(q):""));
     $("#rows").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
@@ -458,7 +493,7 @@ async function StudentsView(){
       <td>${r.has_login?'<span class="chip ok">active</span>':'<span class="chip warn">not claimed</span>'}</td></tr>`).join("")
     ||`<tr><td colspan="5"><div class="empty"><b>No students</b>Import your roster CSV.</div></td></tr>`;}catch(e){toast(e.message);}};
   load();let deb;$("#q").addEventListener("input",e=>{clearTimeout(deb);deb=setTimeout(()=>load(e.target.value.trim()),280);});
-  $("#codes").onclick=async()=>{try{const rows=await api("/api/admin/students/activation-codes");
+  if(canManage)$("#codes").onclick=async()=>{try{const rows=await api("/api/admin/students/activation-codes");
     if(!rows.length)return toast("Everyone has claimed already.");
     const csv="roll_no,full_name,email,branch,activation_code\n"+rows.map(r=>[r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
     const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="activation-codes.csv";a.click();URL.revokeObjectURL(a.href);}catch(e){toast(e.message);}};
@@ -491,25 +526,27 @@ function ImportView(){
 }
 
 async function DrivesAdmin(){
-  Shell(`<div class="page-h"><h1>Drives</h1><button class="btn btn-primary btn-sm" onclick="$('#new').style.display='block'">+ New drive</button></div>
-    <div class="panel" id="new" style="display:none"><div class="panel-t">New drive</div>
+  const canManage=isPlacementOfficer();
+  Shell(`<div class="page-h"><h1>${canManage?"Drives":"Branch drive pipeline"}</h1>${canManage?'<button class="btn btn-primary btn-sm" onclick="$(\'#new\').style.display=\'block\'">+ New drive</button>':''}</div>
+    ${canManage?`<div class="panel" id="new" style="display:none"><div class="panel-t">New drive</div>
       <div class="grid2"><div><label>Company name</label><input id="nd-n">
         <label>Category</label><select id="nd-c"><option>tier1</option><option>tier2</option><option>core</option><option>dream</option><option>internship</option></select></div>
       <div><label>Package (₹/yr)</label><input id="nd-p" type="number" placeholder="1200000">
         <label>Deadline</label><input id="nd-d" type="datetime-local"></div></div>
-      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="createDrive()">Create (as draft)</button></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="createDrive()">Create (as draft)</button></div>`:''}
     <div id="list"></div>`,"#/drives-admin");
   loadDrivesAdmin();
 }
 async function loadDrivesAdmin(){
   try{const cs=await api("/api/companies");
+    const canManage=isPlacementOfficer();
     $("#list").innerHTML=cs.map(c=>`<div class="drive-card">
       <div class="top"><div><span class="nm">${esc(c.name)}</span>
         <span class="chip ${c.category==='tier1'?'warn':'mut'}" style="margin-left:8px">${esc(c.category||'—')}</span>
         <span class="chip ${c.status===1?'ok':'gray'}" style="margin-left:6px">${c.status===1?'open':c.status===2?'closed':'draft'}</span></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pkg">${money(c.package)}</span>
-          <button class="btn btn-ghost btn-sm" onclick="toggleDrive(${c.id},${c.status===1?2:1})">${c.status===1?'Close':'Open'}</button>
-          <button class="btn btn-ghost btn-sm" onclick="RuleBuilder(${c.id},'${esc(c.name)}')">Eligibility</button>
+          ${canManage?`<button class="btn btn-ghost btn-sm" onclick="toggleDrive(${c.id},${c.status===1?2:1})">${c.status===1?'Close':'Open'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="RuleBuilder(${c.id},'${esc(c.name)}')">Eligibility</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="Registrants(${c.id},'${esc(c.name)}')">Pipeline (${c.registered})</button></div></div></div>`).join("")
     ||`<div class="panel"><div class="empty"><b>No drives</b>Create your first one.</div></div>`;}catch(e){toast(e.message);}
 }
@@ -586,13 +623,14 @@ async function Registrants(cid,name){
   Shell(`<div class="page-h"><h1>Pipeline · ${esc(name)}</h1><a class="btn btn-ghost btn-sm" href="#/drives-admin">← Drives</a></div>
     <div class="panel"><table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Resume</th><th>Round</th><th>Status</th></tr></thead><tbody id="regs"></tbody></table></div>`,"#/drives-admin");
   try{const rows=await api(`/api/admin/companies/${cid}/registrations`);
+    const canManage=isPlacementOfficer();
     $("#regs").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
       <td><span class="chip gray">${esc(r.branch)}</span></td><td class="mono">${r.cgpa??"—"}</td>
       <td>${r.has_resume?'<span class="chip ok">✓</span>':'<span class="chip bad">✕</span>'}</td>
       <td><select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'current_round',this.value,${cid},'${esc(name)}')">
         ${ROUNDS.map(x=>`<option value="${x}" ${x===r.current_round?'selected':''}>${RL[x]}</option>`).join("")}</select></td>
-      <td><select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'status',this.value,${cid},'${esc(name)}')">
-        ${["active","placed","rejected","withdrawn"].map(x=>`<option ${x===r.status?'selected':''}>${x}</option>`).join("")}</select></td></tr>`).join("")
+      <td>${canManage?`<select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'status',this.value,${cid},'${esc(name)}')">
+        ${["active","placed","rejected","withdrawn"].map(x=>`<option ${x===r.status?'selected':''}>${x}</option>`).join("")}</select>`:`<span class="chip ${r.status==='placed'?'ok':r.status==='rejected'?'bad':'mut'}">${esc(r.status)}</span>`}</td></tr>`).join("")
     ||`<tr><td colspan="7"><div class="empty"><b>No registrations yet</b></div></td></tr>`;}catch(e){toast(e.message);}
 }
 async function advApp(id,k,v,cid,name){try{await api("/api/admin/applications/"+id,{method:"PATCH",body:JSON.stringify({[k]:v})});
@@ -713,22 +751,28 @@ async function AnalyticsView(){
 }
 
 async function QAAdmin(){
-  Shell(`<div class="page-h"><h1>Q&amp;A inbox</h1><span class="crumb">CRs escalate · PO answers</span></div>
-    <div class="panel" id="qs"></div>`,"#/qa-admin");
-  try{const qs=await api("/api/admin/questions");
+  const isCR=AUTH.role==="sub_admin";
+  Shell(`<div class="page-h"><h1>${isCR?"Questions to escalate":"Q&A inbox"}</h1><span class="crumb">CRs escalate · PO answers</span></div>
+    ${isCR?'':'<div class="panel" id="alerts"></div>'}<div class="panel" id="qs"></div>`,"#/qa-admin");
+  try{const [qs,notifications]=await Promise.all([api("/api/admin/questions"),isCR?Promise.resolve([]):api("/api/admin/notifications")]);
+    if(!isCR){const unread=notifications.filter(n=>!n.read_at);
+      $("#alerts").innerHTML=unread.length?`<div class="panel-t">Escalations needing attention <span class="chip warn">${unread.length}</span></div>`+
+        unread.map(n=>`<div class="qa-item"><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body||"")}</div><div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="markRead(${n.id})">Mark read</button></div></div>`).join(""):
+        `<div class="empty"><b>No escalations waiting</b>Questions escalated by CRs appear here.</div>`;}
     $("#qs").innerHTML=qs.map(q=>`<div class="qa-item">
       <div class="t">${esc(q.title)} <span class="chip gray" style="margin-left:6px">${esc(q.branch||"")} · ${esc(q.roll_no||"")}</span>
         <span class="chip ${q.status==='answered'?'ok':q.status==='escalated'?'warn':'gray'}" style="margin-left:6px">${q.status}</span></div>
       ${q.body?`<div class="b">${esc(q.body)}</div>`:""}
       ${q.answer?`<div class="ans">${esc(q.answer)}</div>`:`
         <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
-          ${q.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="modQ(${q.id},'escalate')">Escalate to PO</button>`:""}
-          ${AUTH.role!=='sub_admin'?`<input id="ans-${q.id}" placeholder="Answer…" style="max-width:340px">
+          ${isCR&&q.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="modQ(${q.id},'escalate')">Escalate to PO</button>`:""}
+          ${!isCR?`<input id="ans-${q.id}" placeholder="Answer…" style="max-width:340px">
           <button class="btn btn-primary btn-sm" onclick="modQ(${q.id},'answer')">Answer &amp; publish</button>`:""}</div>`}
     </div>`).join("")||`<div class="empty"><b>Inbox zero</b></div>`;}catch(e){toast(e.message);}
 }
 async function modQ(id,action){const body={action};if(action==="answer")body.answer=$("#ans-"+id).value;
   try{await api("/api/admin/questions/"+id,{method:"PATCH",body:JSON.stringify(body)});toast(action==="answer"?"Published to all students":"Escalated");QAAdmin();}catch(e){toast(e.message);}}
+async function markRead(id){try{await api("/api/admin/notifications/"+id+"/read",{method:"PATCH"});QAAdmin();}catch(e){toast(e.message);}}
 
 async function EditsAdmin(){
   Shell(`<div class="page-h"><h1>Edit requests</h1></div><div class="panel" id="er2"></div>`,"#/edits");
@@ -751,12 +795,14 @@ const ROUTES={"#/login":LoginView,"#/dashboard":Dashboard,"#/students":StudentsV
   "#/qa-admin":QAAdmin,"#/edits":EditsAdmin,
   "#/home":StudentHome,"#/drives":DrivesStudent,"#/profile":ProfileView,"#/qa":QAStudent,"#/feedback":FeedbackView};
 const STAFF_ONLY=["#/dashboard","#/students","#/import","#/drives-admin","#/policy","#/notes","#/analytics","#/qa-admin","#/edits"];
+const PLACEMENT_OFFICER_ONLY=["#/import","#/policy","#/notes","#/analytics","#/edits"];
 function enterApp(){location.hash=isStaff()?"#/dashboard":"#/home";render();}
 function render(){
   let h=location.hash||"";
   if(!AUTH)h="#/login";
   else if(!ROUTES[h]||h==="#/login")h=isStaff()?"#/dashboard":"#/home";
   else if(!isStaff()&&STAFF_ONLY.includes(h))h="#/home";
+  else if(AUTH.role==="sub_admin"&&PLACEMENT_OFFICER_ONLY.includes(h))h="#/dashboard";
   if(location.hash!==h){location.hash=h;return;}
   ROUTES[h]();
 }

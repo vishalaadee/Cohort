@@ -73,5 +73,9 @@ if [ "$SEED" = "seed" ]; then
   psql "$CONN" -v ON_ERROR_STOP=1 -f backend/db-init/03-seed.sql
 fi
 
+echo "-> applying tracked migrations ..."
+source scripts/migration-lib.sh
+run_migrations "$CONN" "$APP_DB_USER" "migrations"
+
 unset PGPASSWORD
 echo "Done. app_user='${APP_DB_USER}' and monitor_user='${MONITOR_DB_USER}' are ready on '${RDS_DB}'."

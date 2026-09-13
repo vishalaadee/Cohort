@@ -23,6 +23,10 @@ def _staff(claims: Claims, admin_only=False):
         raise HTTPException(403, "Placement-cell access required")
 
 
+def _placement_officer(claims: Claims):
+    _staff(claims, admin_only=True)
+
+
 # ------------------------------ drives ------------------------------------
 @router.post("/companies")
 def create_drive(payload: dict, claims: Claims = Depends(get_claims)):
@@ -58,7 +62,7 @@ def update_drive(cid: int, payload: dict, claims: Claims = Depends(get_claims)):
 # ------------------------- rule builder + policy ---------------------------
 @router.get("/attributes")
 def list_attributes(claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         custom = conn.execute(text(
             "SELECT key, label, data_type FROM attribute_defs ORDER BY key"
@@ -96,7 +100,7 @@ def _validate_rules(rules):
 
 @router.get("/companies/{cid}/rules")
 def get_rules(cid: int, claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         row = conn.execute(text(
             "SELECT eligibility_rules FROM companies WHERE id=:cid"), {"cid": cid}).first()
@@ -120,7 +124,7 @@ def save_rules(cid: int, payload: dict, claims: Claims = Depends(get_claims)):
 @router.get("/companies/{cid}/eligibility-preview")
 def eligibility_preview(cid: int, claims: Claims = Depends(get_claims)):
     """'142 of 480 students eligible' — before the drive even opens."""
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         d = conn.execute(text("""
             SELECT package, min_cgpa, max_backlogs, eligible_branches, eligibility_rules
@@ -149,7 +153,7 @@ def eligibility_preview(cid: int, claims: Claims = Depends(get_claims)):
 
 @router.get("/policy")
 def get_policy(claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         p = conn.execute(text("SELECT placement_policy FROM colleges WHERE id=:c"),
                          {"c": claims.college_id}).scalar()
@@ -192,6 +196,8 @@ def advance_application(aid: int, payload: dict, claims: Claims = Depends(get_cl
     """Advance/reject/place. Placing also records the offer."""
     _staff(claims)
     rnd, status = payload.get("current_round"), payload.get("status")
+    if claims.role == "sub_admin" and status is not None:
+        raise HTTPException(403, "CRs can update interview rounds, but only the placement officer can change an application status")
     if rnd and rnd not in ROUNDS: raise HTTPException(400, "Unknown round")
     if status and status not in ("active", "placed", "rejected", "withdrawn"):
         raise HTTPException(400, "Unknown status")
@@ -218,7 +224,7 @@ def advance_application(aid: int, payload: dict, claims: Claims = Depends(get_cl
 # --------------------------- notes + calendar ------------------------------
 @router.get("/notes")
 def list_notes(claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT n.id, n.note_date, n.kind, n.title, n.body, c.name AS company
@@ -229,7 +235,7 @@ def list_notes(claims: Claims = Depends(get_claims)):
 
 @router.post("/notes")
 def add_note(payload: dict, claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     if not payload.get("title") or not payload.get("note_date"):
         raise HTTPException(400, "title and note_date are required")
     if payload.get("kind", "note") not in ("visit", "test", "deadline", "note"):
@@ -246,7 +252,7 @@ def add_note(payload: dict, claims: Claims = Depends(get_claims)):
 
 @router.delete("/notes/{nid}")
 def delete_note(nid: int, claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         n = conn.execute(text("DELETE FROM company_notes WHERE id=:n"), {"n": nid}).rowcount
     if not n: raise HTTPException(404, "Note not found")
@@ -275,27 +281,83 @@ def moderate_question(qid: int, payload: dict, claims: Claims = Depends(get_clai
     action = payload.get("action")
     with tenant_connection(claims) as conn:
         if action == "escalate":
-            n = conn.execute(text(
-                "UPDATE questions SET status='escalated' WHERE id=:q AND status='open'"),
-                {"q": qid}).rowcount
+            if claims.role != "sub_admin":
+                raise HTTPException(403, "Only a CR can escalate a branch question to the placement officer")
+            question = conn.execute(text("""
+                UPDATE questions SET status='escalated'
+                WHERE id=:q AND status='open'
+                RETURNING id, college_id, title
+            """), {"q": qid}).mappings().first()
+            if question:
+                conn.execute(text("""
+                    INSERT INTO notifications
+                      (college_id, recipient_role, kind, title, body,
+                       resource_type, resource_id, created_by_user_id)
+                    VALUES (:college_id, 'admin', 'question_escalated', :title, :body,
+                            'question', :question_id, :actor_id)
+                    ON CONFLICT (college_id, recipient_role, kind, resource_type, resource_id)
+                    DO NOTHING
+                """), {
+                    "college_id": question["college_id"],
+                    "title": "CR escalated a student question",
+                    "body": question["title"][:500],
+                    "question_id": question["id"],
+                    "actor_id": claims.user_id,
+                })
+            n = 1 if question else 0
         elif action == "answer":
-            if claims.role not in ("owner", "admin"):
-                raise HTTPException(403, "Only the placement officer can answer")
+            _placement_officer(claims)
             ans = (payload.get("answer") or "").strip()
             if not ans: raise HTTPException(400, "Answer text required")
             n = conn.execute(text(
                 "UPDATE questions SET status='answered', answer=:a WHERE id=:q"),
                 {"a": ans[:2000], "q": qid}).rowcount
+            if n:
+                conn.execute(text("""
+                    UPDATE notifications SET read_at = COALESCE(read_at, now())
+                    WHERE resource_type='question' AND resource_id=:q
+                """), {"q": qid})
         else:
             raise HTTPException(400, "action must be escalate|answer")
     if not n: raise HTTPException(404, "Question not found (or already handled)")
     return {"ok": True}
 
 
+# -------------------- placement-officer notification inbox -----------------
+@router.get("/notifications")
+def list_notifications(claims: Claims = Depends(get_claims)):
+    _placement_officer(claims)
+    with tenant_connection(claims) as conn:
+        rows = conn.execute(text("""
+            SELECT n.id, n.kind, n.title, n.body, n.resource_type,
+                   n.resource_id, n.created_at, n.read_at, q.status AS question_status
+            FROM notifications n
+            LEFT JOIN questions q
+              ON n.resource_type='question' AND q.id=n.resource_id
+            WHERE n.recipient_role='admin'
+            ORDER BY (n.read_at IS NULL) DESC, n.created_at DESC
+            LIMIT 100
+        """)).mappings().all()
+    return [dict(row) for row in rows]
+
+
+@router.patch("/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: int, claims: Claims = Depends(get_claims)):
+    _placement_officer(claims)
+    with tenant_connection(claims) as conn:
+        updated = conn.execute(text("""
+            UPDATE notifications SET read_at=COALESCE(read_at, now())
+            WHERE id=:id AND recipient_role='admin'
+        """), {"id": notification_id}).rowcount
+    if not updated:
+        raise HTTPException(404, "Notification not found")
+    return {"read": True}
+
+
 # ---------------------- edit-request approvals -----------------------------
 @router.get("/edit-requests")
 def pending_edits(claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT e.id, s.roll_no, s.full_name, e.field, e.current_value,
@@ -350,7 +412,7 @@ def analytics(claims: Claims = Depends(get_claims)):
     """Placement-officer analytics: overview, branch performance, CTC
     distribution, drive-wise conversion, CGPA insight, offer timeline, and
     the actionable list of students who haven't applied anywhere."""
-    _staff(claims)
+    _placement_officer(claims)
     with tenant_connection(claims) as conn:
         overview = conn.execute(text("""
             SELECT

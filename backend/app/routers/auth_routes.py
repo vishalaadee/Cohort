@@ -22,6 +22,7 @@ from sqlalchemy import text
 from ..auth import Claims, get_claims
 from ..config import settings
 from ..db import tenant_connection
+from ..permissions import normalize_cr_permissions
 from ..security import create_token, hash_password, login_limiter, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -66,7 +67,7 @@ def login_with_google(body: GoogleIn):
     with tenant_connection(SYSTEM) as conn:
         # admins / sub-admins / owner first: membership joined to user email
         m = conn.execute(text("""
-            SELECT u.id AS user_id, m.role, m.college_id, m.branch_id
+            SELECT u.id AS user_id, m.role, m.college_id, m.branch_id, m.permissions
             FROM memberships m JOIN users u ON u.id = m.user_id
             WHERE lower(u.email) = :email AND m.status = 'active'
             ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1
@@ -77,7 +78,7 @@ def login_with_google(body: GoogleIn):
             conn.execute(text(
                 "UPDATE users SET external_auth_id = COALESCE(external_auth_id, :sub) WHERE id = :uid"
             ), {"sub": sub, "uid": m["user_id"]})
-            return _token_response(conn, m["user_id"], m["role"], m["college_id"], m["branch_id"])
+            return _token_response(conn, m["user_id"], m["role"], m["college_id"], m["branch_id"], m["permissions"])
 
         # students: match roster email
         rows = conn.execute(text("""
@@ -131,13 +132,13 @@ def login_with_password(body: LoginIn, request: Request):
 
         # role resolution: membership first, else linked student
         m = conn.execute(text("""
-            SELECT role, college_id, branch_id FROM memberships
+            SELECT role, college_id, branch_id, permissions FROM memberships
             WHERE user_id = :uid AND status = 'active'
             ORDER BY CASE role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1
                                WHEN 'sub_admin' THEN 2 ELSE 3 END LIMIT 1
         """), {"uid": u["id"]}).mappings().first()
         if m:
-            return _token_response(conn, u["id"], m["role"], m["college_id"], m["branch_id"])
+            return _token_response(conn, u["id"], m["role"], m["college_id"], m["branch_id"], m["permissions"])
 
         st = conn.execute(text(
             "SELECT college_id, branch_id FROM students WHERE user_id = :uid LIMIT 1"
@@ -222,13 +223,23 @@ def me(claims: Claims = Depends(get_claims)):
             college = conn.execute(text(
                 "SELECT id, name, slug FROM colleges WHERE id = :cid"
             ), {"cid": claims.college_id}).mappings().first()
+        membership = None
+        if claims.user_id and claims.role == "sub_admin":
+            membership = conn.execute(text("""
+                SELECT permissions FROM memberships
+                WHERE user_id=:uid AND college_id=:cid
+                  AND role='sub_admin' AND status='active'
+                LIMIT 1
+            """), {"uid": claims.user_id, "cid": claims.college_id}).mappings().first()
     return {"user": dict(u) if u else None,
             "role": claims.role, "college": dict(college) if college else None,
-            "branch_id": claims.branch_id}
+            "branch_id": claims.branch_id,
+            "permissions": normalize_cr_permissions(membership["permissions"]) if membership else []}
 
 
 def _token_response(conn, user_id: int, role: str,
-                    college_id: int | None, branch_id: int | None):
+                    college_id: int | None, branch_id: int | None,
+                    permissions_raw=None):
     u = conn.execute(text(
         "SELECT email, full_name FROM users WHERE id = :uid"
     ), {"uid": user_id}).mappings().one()
@@ -236,4 +247,5 @@ def _token_response(conn, user_id: int, role: str,
                          college_id=college_id, branch_id=branch_id)
     return {"token": token, "role": role, "college_id": college_id,
             "branch_id": branch_id,
+            "permissions": normalize_cr_permissions(permissions_raw) if role == "sub_admin" else [],
             "user": {"id": user_id, "email": u["email"], "full_name": u["full_name"]}}

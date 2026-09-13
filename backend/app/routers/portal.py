@@ -273,9 +273,6 @@ def browse_feedback(claims: Claims = Depends(get_claims)):
             FROM feedback f JOIN companies c ON c.id=f.company_id
             ORDER BY f.created_at DESC LIMIT 200""")).mappings().all()
     return [dict(r) for r in rows]
-<<<<<<< Updated upstream
-=======
-
 
 # ============================ consent ======================================
 @router.post("/consent")
@@ -345,4 +342,4 @@ def my_score(claims: Claims = Depends(get_claims)):
         conn.execute(text("UPDATE students SET cohort_score = CAST(:s AS jsonb) WHERE user_id = :u"),
                      {"s": json.dumps(score), "u": claims.user_id})
     return {**score, "consent_recruiter_share": row["consent_recruiter_share"]}
->>>>>>> Stashed changes
+
