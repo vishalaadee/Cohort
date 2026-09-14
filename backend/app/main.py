@@ -8,21 +8,26 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from .config import settings
 from .db import engine, schema_is_current
 from .errors import (database_exception_handler, http_exception_handler,
                      unhandled_exception_handler, validation_exception_handler)
-from .routers import admin_extra, auth_routes, companies, dashboard, portal, students_admin
+from .routers import (admin_extra, auth_routes, companies, dashboard, placement,
+                      portal, students_admin)
 
-app = FastAPI(title="Placement Platform API", version="0.1.0")
+app = FastAPI(title="Placement Platform API", version="0.2.0")
 logger = logging.getLogger("cohort.api")
 
-# In the single-box setup Caddy serves the site and the API from the same
-# origin, so CORS is permissive only to make local dev easy. Tighten later.
+# Caddy serves the site and the API from one origin, so no cross-origin
+# request is expected in normal operation. Set ALLOWED_ORIGINS in .env only
+# if you deliberately serve the frontend from somewhere else.
+_origins = [o.strip() for o in (getattr(settings, "allowed_origins", "") or "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_origins or ["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Exposes GET /metrics for Prometheus (internal network only — Caddy does not
@@ -35,6 +40,7 @@ app.include_router(companies.router)
 app.include_router(students_admin.router)
 app.include_router(portal.router)
 app.include_router(admin_extra.router)
+app.include_router(placement.router)      # buckets, reminders, exports, publish
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)

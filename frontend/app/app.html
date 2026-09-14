@@ -3,168 +3,213 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cohort — your placement workspace</title>
+<title>Cohort — placement workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
-:root, :root[data-theme=light]{
-  --bg:#F5F6FC; --panel:#FFFFFF; --panel2:#FAFBFF; --ink:#12172E; --mut:#5E6684;
-  --line:#E6E9F5; --line2:#D4D9EC;
-  --acc:#6C5CF7; --acc-hi:#5A49F0; --acc-ink:#fff; --acc-soft:rgba(108,92,247,.10);
-  --mint:#10B981; --mint-soft:rgba(16,185,129,.12);
-  --amber:#E8A23B; --amber-soft:rgba(232,162,59,.14);
-  --rose:#E4506A; --rose-soft:rgba(228,80,106,.10);
-  --lime:#9BE33B;
-  --side:#10142B; --side-ink:#EDEFFB; --side-mut:#8C94B8;
-  --shadow:0 1px 2px rgba(18,23,46,.05),0 10px 30px rgba(18,23,46,.07);
-  --glow:0 0 0 3px var(--acc-soft);
+/* ===========================================================================
+   Tokens. Neutrals are shared; the accent is set by data-role on <html>:
+   admin = premium maroon, CR = green, student = gold, junior = deep blue.
+   =========================================================================== */
+:root{
+  --paper:#07090A; --panel:#0F1214; --sunken:#0B0E0F; --raised:#141819;
+  --ink:#E7EAEA; --ink-2:#99A2A4; --ink-3:#6A7375;
+  --line:#1C2123; --line-2:#2A3134;
+  --ok:#3ECF8E; --ok-soft:#0F241A;
+  --warn:#D8A94A; --warn-soft:#241D0E;
+  --bad:#E0726C; --bad-soft:#261513;
+  --pro:#C8A451; --pro-soft:#221C0D;
+  --acc:#A32D45; --acc-hi:#BE3A54; --acc-ink:#FFFFFF; --acc-soft:#2B0F16;
+  --r:9px; --r-lg:13px;
 }
-:root[data-theme=dark]{
-  --bg:#0A0E1E; --panel:#121730; --panel2:#171D3B; --ink:#EDEFFB; --mut:#8C94B8;
-  --line:#232B52; --line2:#2E3868;
-  --acc:#8B7BFF; --acc-hi:#A093FF; --acc-ink:#0A0E1E; --acc-soft:rgba(139,123,255,.16);
-  --mint:#2EE6A8; --mint-soft:rgba(46,230,168,.14);
-  --amber:#F5B857; --amber-soft:rgba(245,184,87,.14);
-  --rose:#FF7590; --rose-soft:rgba(255,117,144,.12);
-  --lime:#C6F35F;
-  --side:#0D1226; --side-ink:#EDEFFB; --side-mut:#8C94B8;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 34px rgba(0,0,0,.35);
-  --glow:0 0 0 3px var(--acc-soft);
+:root[data-role="cr"]     {--acc:#33B36B;--acc-hi:#4FC77F;--acc-ink:#04140B;--acc-soft:#0D2317}
+:root[data-role="student"]{--acc:#D4A937;--acc-hi:#E3BC55;--acc-ink:#15110A;--acc-soft:#241C09}
+:root[data-role="junior"] {--acc:#4483DD;--acc-hi:#5E98EA;--acc-ink:#FFFFFF;--acc-soft:#0E1B2C}
+
+:root[data-theme="light"]{
+  --paper:#F6F6F5; --panel:#FFFFFF; --sunken:#EFEFEE; --raised:#FAFAF9;
+  --ink:#15191A; --ink-2:#515A5C; --ink-3:#7C8486;
+  --line:#E4E4E2; --line-2:#D3D4D1;
+  --ok:#14794F; --ok-soft:#E4F1EA; --warn:#8E6314; --warn-soft:#F7EFDD;
+  --bad:#A83A33; --bad-soft:#F8E8E6; --pro:#8A6A17; --pro-soft:#F6EFDC;
+  --acc:#7B1E33; --acc-hi:#64182A; --acc-ink:#FFFFFF; --acc-soft:#F7E9EC;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{color-scheme:light dark}
-body{font-family:Inter,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+:root[data-theme="light"][data-role="cr"]     {--acc:#1E7A46;--acc-hi:#156337;--acc-ink:#FFFFFF;--acc-soft:#E5F2EA}
+:root[data-theme="light"][data-role="student"]{--acc:#8A6A12;--acc-hi:#70560D;--acc-ink:#FFFFFF;--acc-soft:#F8F0D9}
+:root[data-theme="light"][data-role="junior"] {--acc:#1F4FA0;--acc-hi:#173F85;--acc-ink:#FFFFFF;--acc-soft:#E7EEF9}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0}
+h2{font-size:15.5px;font-weight:600;margin:0}
+h3{font-size:14px;font-weight:600;margin:0}
+p{margin:0}
 a{color:inherit;text-decoration:none}
-h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-.02em;font-weight:700}
-.mono{font-family:"IBM Plex Mono",monospace}
-input,select,textarea{font-family:Inter;font-size:14.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:11px 13px;width:100%;transition:.15s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:var(--glow)}
-textarea{resize:vertical;min-height:84px}
-label{display:block;font-size:13px;font-weight:600;margin:13px 0 6px}
-.btn{font-family:Inter;font-weight:600;font-size:14px;border-radius:11px;padding:10px 17px;cursor:pointer;border:1px solid transparent;transition:.15s;display:inline-flex;align-items:center;gap:8px;justify-content:center;background:transparent;color:var(--ink)}
-.btn-primary{background:var(--acc);color:var(--acc-ink)}
-.btn-primary:hover{background:var(--acc-hi);transform:translateY(-1px)}
-.btn-ghost{border-color:var(--line2)}
-.btn-ghost:hover{border-color:var(--acc);color:var(--acc)}
-.btn-mint{background:var(--mint-soft);color:var(--mint)}
-.btn-sm{padding:6px 12px;font-size:13px;border-radius:9px}
-.btn[disabled]{opacity:.5;cursor:default;transform:none}
-.brand{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque";font-weight:800;font-size:20px;letter-spacing:-.03em}
-.brand .dot{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--acc),#9F5CF7);position:relative;flex:none}
-.brand .dot::after{content:"";position:absolute;inset:7px 7px auto auto;width:6px;height:6px;border-radius:50%;background:var(--lime)}
-.chip{font-family:"IBM Plex Mono";font-size:11px;padding:3px 10px;border-radius:999px;font-weight:500;white-space:nowrap}
-.chip.ok{background:var(--mint-soft);color:var(--mint)}
-.chip.warn{background:var(--amber-soft);color:var(--amber)}
-.chip.bad{background:var(--rose-soft);color:var(--rose)}
-.chip.mut{background:var(--acc-soft);color:var(--acc)}
-.chip.gray{background:color-mix(in srgb,var(--mut) 14%,transparent);color:var(--mut)}
+button{font:inherit;color:inherit}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-/* login */
-.login-wrap{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
-.login-left{background:var(--side);color:var(--side-ink);padding:52px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
-.login-left::before{content:"";position:absolute;top:-30%;right:-25%;width:80%;height:120%;background:radial-gradient(circle,rgba(139,123,255,.22),transparent 62%)}
-.login-left::after{content:"";position:absolute;bottom:-25%;left:-15%;width:60%;height:90%;background:radial-gradient(circle,rgba(198,243,95,.10),transparent 60%)}
-.login-left h1{font-size:clamp(28px,3.4vw,44px);line-height:1.05;max-width:15ch;position:relative;font-weight:800}
-.login-left h1 em{font-style:normal;background:linear-gradient(90deg,var(--acc-hi),var(--lime));-webkit-background-clip:text;background-clip:text;color:transparent}
-.login-left .sub{color:var(--side-mut);margin-top:16px;max-width:36ch;position:relative;font-size:15.5px}
-.login-left .foot{font-family:"IBM Plex Mono";font-size:12px;color:var(--side-mut);position:relative}
-.login-right{display:flex;align-items:center;justify-content:center;padding:36px 22px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:30px;width:100%;max-width:430px}
-.card h2{font-size:22px;margin-bottom:4px}
-.card .hint{font-size:13.5px;color:var(--mut);margin-bottom:6px}
-.tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:8px}
-.tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px 0;font-size:13.5px;font-weight:600;color:var(--mut);cursor:pointer;font-family:Inter;transition:.15s}
-.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--mut);font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.1em}
-.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
-.err{background:var(--rose-soft);color:var(--rose);border:1px solid color-mix(in srgb,var(--rose) 30%,transparent);border-radius:11px;padding:10px 13px;font-size:13.5px;margin-top:14px;display:none}
+/* ---------------- login ---------------- */
+.login{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.login .left{background:var(--panel);border-right:1px solid var(--line);padding:48px 44px;display:flex;flex-direction:column;gap:26px;justify-content:space-between}
+.login .left h1{font-size:34px;line-height:1.22;letter-spacing:-.03em}
+.login .left h1 em{font-style:normal;color:var(--acc)}
+.login .left .sub{color:var(--ink-2);font-size:16px;margin-top:12px;max-width:40ch}
+.login .left .foot{color:var(--ink-3);font-size:13px}
+.login .right{display:grid;place-items:center;padding:32px 24px}
+.login .box{width:100%;max-width:392px}
+.brand{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:16px}
+.brand .mk{width:19px;height:19px;border-radius:6px;background:var(--acc);flex:none;position:relative}
+.brand .mk::after{content:"";position:absolute;right:3px;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--pro)}
+.ltabs{display:flex;gap:3px;background:var(--sunken);border:1px solid var(--line);border-radius:9px;padding:3px;margin-bottom:20px}
+.ltabs button{flex:1;border:0;background:transparent;padding:7px;border-radius:7px;cursor:pointer;font-size:14px;color:var(--ink-2)}
+.ltabs button.on{background:var(--panel);color:var(--ink);font-weight:600}
+label{display:block;font-size:13px;font-weight:500;margin:14px 0 5px;color:var(--ink-2)}
+input,select,textarea{width:100%;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);border-radius:8px;padding:9px 11px;font:inherit;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+textarea{min-height:84px;resize:vertical}
+.divider{text-align:center;color:var(--ink-3);font-size:12px;margin:16px 0}
+.err{display:none;color:var(--bad);font-size:13px;margin-top:10px}
 .err.show{display:block}
-#gbtn{display:flex;justify-content:center;min-height:44px}
-@media(max-width:860px){.login-wrap{grid-template-columns:1fr}.login-left{display:none}}
 
-/* shell */
-.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
-.side{background:var(--side);color:var(--side-ink);padding:22px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow-y:auto}
-.side .brand{color:var(--side-ink);padding:0 8px}
-.nav{display:flex;flex-direction:column;gap:3px}
-.nav .grp{font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--side-mut);margin:12px 8px 5px}
-.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--side-mut);font-weight:500;transition:.13s}
-.nav a:hover{color:var(--side-ink);background:rgba(255,255,255,.06)}
-.nav a.on{color:var(--side-ink);background:rgba(139,123,255,.18)}
-.nav a .ic{font-family:"IBM Plex Mono";font-size:11px;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.09);display:grid;place-items:center;flex:none}
-.side .spacer{flex:1}
-.userbox{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-size:13px}
-.userbox .em{color:var(--side-mut);font-family:"IBM Plex Mono";font-size:11px;word-break:break-all}
-.theme-toggle{display:flex;gap:6px;background:rgba(255,255,255,.07);border-radius:999px;padding:4px;margin:12px 0}
-.theme-toggle button{flex:1;border:0;border-radius:999px;padding:6px;background:transparent;color:var(--side-mut);cursor:pointer;font-size:13px;font-family:Inter;font-weight:600}
-.theme-toggle button.on{background:var(--acc);color:var(--acc-ink)}
-.main{padding:28px 34px;max-width:1220px;width:100%}
-.page-h{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-.page-h h1{font-size:25px}
-.page-h .crumb{font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
-@media(max-width:760px){.shell{grid-template-columns:1fr}.side{position:static;height:auto}}
+/* ---------------- shell ---------------- */
+.shell{display:flex;min-height:100vh}
+.rail{width:194px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:16px 11px;display:flex;flex-direction:column;gap:2px}
+.rail .brand{padding:2px 8px 16px}
+.rgrp{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:13px 9px 4px}
+.rail a.nav{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;color:var(--ink-2);font-size:14px}
+.rail a.nav:hover{background:var(--sunken);color:var(--ink)}
+.rail a.nav.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.rail a.nav .ct{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+.rail a.nav.on .ct{color:var(--acc)}
+.rfoot{margin-top:auto;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.rfoot .who{font-size:12.5px;color:var(--ink-3);padding:0 9px}
+.rfoot .who b{display:block;color:var(--ink-2);font-weight:600;font-size:13px}
+.rfoot .row{display:flex;gap:6px;padding:0 5px}
+.tt{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:1}
+.tt button{flex:1;border:0;background:var(--panel);padding:4px;cursor:pointer;font-size:12px;color:var(--ink-3);border-right:1px solid var(--line)}
+.tt button:last-child{border-right:0}
+.tt button.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
 
-/* widgets */
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;transition:.15s}
-.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.stat .k{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--mut)}
-.stat .v{font-family:"Bricolage Grotesque";font-weight:700;font-size:29px;margin-top:5px}
-.stat .v small{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--mint);font-weight:500;margin-left:6px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
-.panel + .panel{margin-top:18px}
-.panel-t{font-family:"Bricolage Grotesque";font-weight:700;font-size:15px;margin-bottom:13px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{text-align:left;font-family:"IBM Plex Mono";font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);font-weight:500;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
-td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+main{flex:1 1 auto;min-width:0;padding:24px}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.head .sub{color:var(--ink-3);font-size:14px;margin-top:2px}
+.head .rt{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.back{font-size:13.5px;color:var(--ink-3)}
+.back:hover{color:var(--acc)}
+
+/* ---------------- primitives ---------------- */
+.btn{border:1px solid var(--line-2);background:var(--panel);border-radius:8px;padding:7px 12px;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.btn-p{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.btn-p:hover:not(:disabled){background:var(--acc-hi);border-color:var(--acc-hi);color:var(--acc-ink)}
+.btn-s{padding:4px 9px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:5px;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.tag.acc{background:var(--acc-soft);color:var(--acc)}
+.tag.pro{background:var(--pro-soft);color:var(--pro)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg)}
+.list{display:flex;flex-direction:column}
+.ch{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ch .rt{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cb{padding:16px}
+.quiet{font-size:13.5px;color:var(--ink-3);line-height:1.6}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 3px}
+.tabs button{border:0;background:transparent;padding:9px 12px;font-size:14px;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+.filters{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.filters button{border:0;background:transparent;padding:5px 10px;border-radius:7px;font-size:13.5px;color:var(--ink-2);cursor:pointer}
+.filters button:hover{background:var(--sunken)}
+.filters button.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.frow select,.frow input{width:auto;min-width:150px}
+.search{width:100%}
+.row{display:flex;gap:14px;align-items:center;padding:13px 16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .bd{flex:1 1 auto;min-width:0}
+.row .t{font-size:14.5px;font-weight:500}
+.row .d{font-size:13px;color:var(--ink-3);margin-top:2px}
+.row .rt{flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.off{background:var(--raised);opacity:.85}
+.mx{display:flex;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.mx .m{flex:1 1 145px;padding:13px 15px;border-right:1px solid var(--line);min-width:0}
+.mx .m:last-child{border-right:0}
+.mx .k{font-size:12px;color:var(--ink-3)}
+.mx .v{font-size:20px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:1px}
+.mx .d{font-size:12.5px;color:var(--ink-3)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--ink-3);font-weight:500;padding:9px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 16px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:0}
-.bar{display:grid;grid-template-columns:96px 1fr 52px;align-items:center;gap:10px;margin:8px 0}
-.bar .lbl{font-family:"IBM Plex Mono";font-size:12px;color:var(--mut)}
-.bar .track{height:9px;background:var(--line);border-radius:6px;overflow:hidden}
-.bar .fill{height:100%;background:linear-gradient(90deg,var(--acc),#A78BFA);border-radius:6px;transition:width .8s ease}
-.bar .fill.mint{background:linear-gradient(90deg,var(--mint),#7CF2C8)}
-.bar .n{font-family:"IBM Plex Mono";font-size:12.5px;text-align:right;font-weight:500}
-.grid2{display:grid;grid-template-columns:1.05fr 1fr;gap:18px}
-@media(max-width:940px){.grid2{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}}
-.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.toolbar input[type=search]{max-width:300px}
-.empty{color:var(--mut);font-size:14px;padding:24px 0;text-align:center}
-.empty b{display:block;font-family:"Bricolage Grotesque";color:var(--ink);font-size:16px;margin-bottom:4px}
-.drop{border:1.5px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--mut);font-size:14px;transition:.15s;cursor:pointer}
-.drop:hover,.drop.over{border-color:var(--acc);background:var(--acc-soft)}
-.drop b{display:block;font-family:"Bricolage Grotesque";color:var(--ink);font-size:16px;margin-bottom:4px}
-.note{font-size:12.5px;color:var(--mut);margin-top:8px}
-.note code{font-family:"IBM Plex Mono";background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:11px}
-.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);border-radius:13px;padding:12px 18px;font-size:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.22s;pointer-events:none;max-width:360px;z-index:99}
-:root[data-theme=dark] .toast{background:var(--panel2);color:var(--ink);border:1px solid var(--line2)}
-.toast.show{opacity:1;transform:none}
-.reasons{margin:6px 0 0;font-size:12.5px;color:var(--rose)}
-.reasons li{margin-left:16px}
-.drive-card{border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px;background:var(--panel2);transition:.15s}
-.drive-card:hover{border-color:var(--line2)}
-.drive-card .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.drive-card .nm{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px}
-.drive-card .pkg{font-family:"IBM Plex Mono";font-weight:600;color:var(--mint)}
-.rule-row{display:grid;grid-template-columns:1.2fr .8fr 1.2fr 34px;gap:8px;margin-bottom:8px;align-items:center}
-.rule-row .x{border:1px solid var(--line2);background:transparent;color:var(--rose);border-radius:9px;height:38px;cursor:pointer;font-size:16px}
-.or-block{border:1px dashed var(--line2);border-radius:12px;padding:12px;margin:10px 0;background:var(--acc-soft)}
-.or-block .t{font-family:"IBM Plex Mono";font-size:11px;color:var(--acc);letter-spacing:.08em;margin-bottom:8px}
-.qa-item{border-bottom:1px solid var(--line);padding:13px 0}
-.qa-item:last-child{border-bottom:0}
-.qa-item .t{font-weight:600;font-size:14.5px}
-.qa-item .b{color:var(--mut);font-size:13.5px;margin-top:3px}
-.qa-item .ans{margin-top:9px;background:var(--mint-soft);border-radius:11px;padding:10px 13px;font-size:13.5px}
-.cal-day{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
-.cal-day:last-child{border-bottom:0}
-.cal-day .d{font-family:"IBM Plex Mono";min-width:88px;font-size:12.5px;color:var(--mut);padding-top:2px}
-.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:12px}
-.kv:last-child{border-bottom:0}
-.kv .k{color:var(--mut)}
-.kv .v{font-weight:600;text-align:right}
-.switch{display:flex;align-items:center;gap:10px;padding:10px 0}
-.switch input{width:auto}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+tbody tr:hover{background:var(--raised)}
+td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tf{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3);flex-wrap:wrap}
+.tf .rt{margin-left:auto;display:flex;gap:6px}
+input[type=checkbox],input[type=radio]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer;margin:0;flex:none}
+.sw{position:relative;width:35px;height:20px;flex:none;display:block}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.sw i{position:absolute;inset:0;background:var(--line-2);border-radius:99px;transition:.15s;pointer-events:none}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:.15s}
+.sw input:checked + i{background:var(--acc)}
+.sw input:checked + i::after{transform:translateX(15px)}
+.code{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:.06em;background:var(--sunken);border:1px solid var(--line-2);border-radius:6px;padding:3px 9px}
+.bars{display:flex;flex-direction:column;gap:8px;padding:16px}
+.bar{display:grid;grid-template-columns:130px 1fr auto;gap:11px;align-items:center}
+.bar .l{font-size:13.5px}
+.bar .t{height:7px;border-radius:99px;background:var(--sunken);overflow:hidden}
+.bar .f{height:100%;background:var(--acc);border-radius:99px}
+.bar .v{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-2);min-width:96px;text-align:right}
+.bar .v span{color:var(--ink-3)}
+.strip{display:flex;align-items:center;gap:3px;margin-top:6px}
+.sg{min-width:29px;height:20px;padding:0 5px;border-radius:4px;background:var(--sunken);display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-2)}
+.sg.on{background:var(--acc-soft);color:var(--acc)}
+.sg.z{opacity:.45}
+.legend{display:flex;align-items:center;gap:3px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--raised)}
+.legend span{min-width:29px;padding:0 5px;text-align:center;font-size:10.5px;color:var(--ink-3)}
+.legend .lb{min-width:0;padding:0;margin-right:8px;font-size:12px;color:var(--ink-3)}
+.bulk{display:flex;align-items:center;gap:9px;padding:8px 16px;background:var(--acc-soft);border-bottom:1px solid var(--line);font-size:13.5px;color:var(--acc);flex-wrap:wrap}
+.bulk .rt{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.bulk .btn{background:var(--panel);border-color:transparent}
+.why{margin-top:8px;border-left:2px solid var(--line-2);padding:1px 0 1px 12px}
+.why .h{font-size:13px;color:var(--ink-3)}
+.why ul{margin:3px 0 0;padding-left:15px;display:flex;flex-direction:column;gap:2px}
+.why li{font-size:14px;color:var(--ink-2)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:3px 14px;padding:14px 16px}
+.col{display:flex;gap:9px;align-items:center;font-size:13.5px;padding:3px 0}
+.col input{margin:0}
+.empty{padding:34px 18px;text-align:center;color:var(--ink-3)}
+.empty .t{font-weight:600;color:var(--ink-2);font-size:14.5px}
+.spin{padding:30px;text-align:center;color:var(--ink-3);font-size:13.5px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);background:var(--panel);border:1px solid var(--line-2);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:20px;z-index:80}
+.modal .box{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-lg);width:100%;max-width:520px;max-height:88vh;overflow:auto}
+.modal .mh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal .mh .x{margin-left:auto;border:0;background:transparent;cursor:pointer;color:var(--ink-3);font-size:18px;line-height:1}
+.modal .mb{padding:18px}
+.modal .mf{display:flex;gap:8px;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line)}
+
+@media (max-width:880px){
+  .login{grid-template-columns:1fr}
+  .login .left{display:none}
+  .shell{flex-direction:column}
+  .rail{width:auto;flex-direction:row;align-items:center;gap:3px;overflow-x:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+  .rail .brand{padding:0 10px 0 2px}
+  .rgrp,.rfoot{display:none}
+  .rail a.nav{white-space:nowrap;padding:6px 10px}
+  main{padding:16px 14px}
+  .row{flex-direction:column;align-items:flex-start;gap:10px}
+  .bar{grid-template-columns:92px 1fr auto}
+  .legend{display:none}
+}
 </style>
 </head>
 <body>
@@ -172,32 +217,54 @@ tr:last-child td{border-bottom:0}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================ core ============================ */
+"use strict";
+/* ==========================================================================
+   Core — kept compatible with the previous app.html: same localStorage keys,
+   same api() contract, same error envelope handling.
+   ========================================================================== */
 const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
 const root=$("#root");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let AUTH=JSON.parse(localStorage.getItem("cohort_auth")||"null");
 let CFG={google_client_id:null};
+let ENT={};                       // entitlements: {feature: bool}
+let BUCKETS=[];                   // college's buckets
 const THEME_KEY="cohort_theme";
+
 function applyTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem(THEME_KEY,t);
-  document.querySelectorAll(".theme-toggle button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));}
-applyTheme(localStorage.getItem(THEME_KEY)||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200);}
-function saveAuth(a){AUTH=a;localStorage.setItem("cohort_auth",JSON.stringify(a));}
-function signOut(){localStorage.removeItem("cohort_auth");AUTH=null;location.hash="#/login";render();}
-class ApiError extends Error{
-  constructor(message,{status=0,code="request_failed",fields={}}={}){super(message);this.name="ApiError";this.status=status;this.code=code;this.fields=fields;}
+  $$(".tt button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));}
+function uiRole(){
+  if(!AUTH)return "admin";
+  if(AUTH.role==="sub_admin")return "cr";
+  if(["owner","admin"].includes(AUTH.role))return "admin";
+  return AUTH.is_final_year===false?"junior":"student";
 }
-const STATUS_MESSAGE={400:"Check the information and try again.",401:"Sign in to continue.",403:"You do not have permission to do that.",404:"We could not find that item.",409:"This action conflicts with the current information.",422:"Check the highlighted fields.",429:"Too many attempts. Please wait a few minutes and try again.",500:"Something went wrong on our side. Please try again.",503:"The service is being updated. Please try again shortly."};
+function applyRole(){document.documentElement.dataset.role=uiRole();}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3200);}
+function saveAuth(a){AUTH=a;localStorage.setItem("cohort_auth",JSON.stringify(a));applyRole();}
+function signOut(){localStorage.removeItem("cohort_auth");AUTH=null;ENT={};BUCKETS=[];location.hash="#/login";render();}
+
+class ApiError extends Error{
+  constructor(message,{status=0,code="request_failed",fields={}}={}){
+    super(message);this.name="ApiError";this.status=status;this.code=code;this.fields=fields;}
+}
+const STATUS_MESSAGE={400:"Check the information and try again.",401:"Sign in to continue.",
+  403:"You do not have permission to do that.",404:"We could not find that item.",
+  409:"This action conflicts with the current information.",422:"Check the highlighted fields.",
+  429:"Too many attempts. Please wait a few minutes and try again.",
+  500:"Something went wrong on our side. Please try again.",
+  503:"The service is being updated. Please try again shortly."};
 function errorFromResponse(data,status){
   const err=data&&typeof data.error==="object"?data.error:null;
-  if(err)return new ApiError(typeof err.message==="string"?err.message:(STATUS_MESSAGE[status]||"We could not complete that request."),{status,code:err.code,fields:err.fields&&typeof err.fields==="object"?err.fields:{}});
-  // Compatibility with an older server during a rolling deployment. Only
-  // accept a plain string detail; never render a raw FastAPI error array.
+  if(err)return new ApiError(typeof err.message==="string"?err.message:(STATUS_MESSAGE[status]||"We could not complete that request."),
+    {status,code:err.code,fields:err.fields&&typeof err.fields==="object"?err.fields:{}});
   const legacy=data&&typeof data.detail==="string"?data.detail:null;
   return new ApiError(legacy||STATUS_MESSAGE[status]||"We could not complete that request.",{status});
 }
-function displayError(err){return err instanceof ApiError?err.message:"We could not complete that request. Check your connection and try again.";}
+const displayError=e=>e instanceof ApiError?e.message:"We could not complete that request. Check your connection and try again.";
+
 async function api(path,opts={}){
   const headers={...(opts.headers||{})};
   if(AUTH?.token)headers["Authorization"]="Bearer "+AUTH.token;
@@ -213,601 +280,1421 @@ async function api(path,opts={}){
   }
   return d;
 }
-const money=v=>v==null?"—":"₹"+(v/100000).toFixed(1)+"\u00A0LPA";
-const RL={resume_screening:"Screening",online_assessment:"Online test",technical_1:"Tech 1",technical_2:"Tech 2",technical_3:"Tech 3",managerial:"Managerial",hr:"HR",final_placement:"Placed"};
-const ROUNDS=Object.keys(RL);
-const isStaff=()=>AUTH&&["owner","admin","sub_admin"].includes(AUTH.role);
+/* File downloads need the same auth header, so they go through fetch too. */
+async function download(path,fallbackName){
+  try{
+    const r=await fetch(path,{headers:AUTH?.token?{Authorization:"Bearer "+AUTH.token}:{}});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw errorFromResponse(d,r.status);}
+    const blob=await r.blob();
+    const cd=r.headers.get("Content-Disposition")||"";
+    const m=/filename="?([^"]+)"?/.exec(cd);
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=m?m[1]:fallbackName;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast("Download started");
+  }catch(e){toast(displayError(e));}
+}
 
-/* ============================ login ============================ */
+const money=v=>v==null?"—":"₹"+(Number(v)/100000).toFixed(1)+" LPA";
+const fmtDate=d=>{if(!d)return "—";const x=new Date(d);return isNaN(x)?"—":
+  x.toLocaleDateString(undefined,{day:"numeric",month:"short"});};
+const RL={resume_screening:"Screening",online_assessment:"Online test",technical_1:"Tech 1",
+  technical_2:"Tech 2",technical_3:"Tech 3",managerial:"Managerial",hr:"HR",final_placement:"Placed"};
+const ROUNDS=Object.keys(RL);
+const STATUS_LABEL={0:"Draft",1:"Open",2:"Closed"};
+const isStaff=()=>AUTH&&["owner","admin","sub_admin"].includes(AUTH.role);
+const isOfficer=()=>AUTH&&["owner","admin"].includes(AUTH.role);
+const bucketLabel=k=>{const b=BUCKETS.find(x=>x.key===k);return b?b.label:(k||"—");};
+
+/* Describes a placement policy in the officer's own words. Used by the
+   Policy screen and by each drive's rules tab. */
+function describePolicy(p){
+  p=p||{};
+  const bits=[];
+  if(p.one_offer)bits.push("one offer per student");
+  else if(p.max_offers)bits.push(`at most ${p.max_offers} offers`);
+  const m=Number(p.multiplier)||1;
+  if(p.upgrade==="multiplier")bits.push(`the next drive must pay at least ${m}× their current offer`);
+  else if(p.upgrade==="higher_slab")bits.push("the next drive must be in a higher bucket");
+  else if(p.upgrade==="both")bits.push(`the next drive must be in a higher bucket and pay at least ${m}× their current offer`);
+  return bits.length?bits.join(" · "):"no restrictions set";
+}
+
+
+/* ==========================================================================
+   Login
+   ========================================================================== */
 function LoginView(){
+  applyRole();
   root.innerHTML=`
-  <div class="login-wrap">
-    <div class="login-left">
-      <a class="brand" href="/"><span class="dot"></span>Cohort</a>
+  <div class="login">
+    <div class="left">
+      <span class="brand"><span class="mk"></span>Cohort</span>
       <div><h1>Your placement season, <em>finally organised.</em></h1>
-        <p class="sub">Drives, eligibility, interviews, feedback — one workspace your whole college shares.</p></div>
-      <p class="foot">roster-verified · scoped access · zero spreadsheets</p>
+        <p class="sub">Drives, eligibility, interviews and feedback — one workspace your whole college shares.</p></div>
+      <p class="foot">roster-verified · scoped access · no spreadsheets</p>
     </div>
-    <div class="login-right"><div class="card">
-      <div class="tabs"><button id="tab-in" class="on">Sign in</button><button id="tab-claim">Claim account</button></div>
+    <div class="right"><div class="box">
+      <div class="ltabs"><button id="tab-in" class="on" type="button">Sign in</button>
+        <button id="tab-claim" type="button">Claim account</button></div>
       <div id="pane-in">
         <h2>Welcome back</h2>
-        <p class="hint">College Google account, or email &amp; password. First time here? Choose <b>Claim account</b> first.</p>
-        <div id="gbtn"></div><div class="divider" id="gdiv">OR</div>
+        <p class="quiet" style="margin-top:6px">College Google account, or email and password. First time here? Choose <b>Claim account</b>.</p>
+        <div id="gbtn" style="margin-top:16px"></div><div class="divider" id="gdiv">OR</div>
         <label for="li-email">Email</label><input id="li-email" type="email" autocomplete="email" placeholder="you@college.ac.in">
         <label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
         <div class="err" id="li-err"></div>
-        <button class="btn btn-primary" id="li-go" style="width:100%;margin-top:16px">Sign in</button>
+        <button class="btn btn-p" id="li-go" type="button" style="width:100%;margin-top:16px;justify-content:center">Sign in</button>
       </div>
       <div id="pane-claim" style="display:none">
         <h2>Claim your account</h2>
-        <p class="hint">Use the activation code from your placement cell once. You will be signed in as a student immediately after activation.</p>
-        <label for="cl-college">College code</label><input id="cl-college" placeholder="e.g. gnc" autocapitalize="none" autocomplete="organization">
-        <label for="cl-roll">Roll number</label><input id="cl-roll" placeholder="e.g. 01GNC22CS001" autocapitalize="characters" autocomplete="username">
-        <label for="cl-code">Activation code</label><input id="cl-code" placeholder="8-character code" autocapitalize="characters" autocomplete="one-time-code">
-        <label>Choose a password <span style="color:var(--mut);font-weight:400">(min 8 chars)</span></label>
+        <p class="quiet" style="margin-top:6px">Use the activation code from your placement cell. It works once.</p>
+        <label for="cl-college">College code</label><input id="cl-college" placeholder="e.g. demo" autocapitalize="none">
+        <label for="cl-roll">Roll number</label><input id="cl-roll" placeholder="e.g. 01DIT23007" autocapitalize="characters">
+        <label for="cl-code">Activation code</label><input id="cl-code" autocapitalize="characters" autocomplete="one-time-code">
+        <label for="cl-pass">Choose a password <span style="color:var(--ink-3);font-weight:400">(min 8 characters)</span></label>
         <input id="cl-pass" type="password" autocomplete="new-password" minlength="8">
         <div class="err" id="cl-err"></div>
-        <button class="btn btn-primary" id="cl-go" style="width:100%;margin-top:16px">Claim account &amp; sign in</button>
+        <button class="btn btn-p" id="cl-go" type="button" style="width:100%;margin-top:16px;justify-content:center">Claim account and sign in</button>
       </div>
     </div></div>
   </div>`;
   const swap=cl=>{$("#pane-in").style.display=cl?"none":"";$("#pane-claim").style.display=cl?"":"none";
     $("#tab-in").classList.toggle("on",!cl);$("#tab-claim").classList.toggle("on",cl);};
   $("#tab-in").onclick=()=>swap(false);$("#tab-claim").onclick=()=>swap(true);
+  const sErr=(sel,m)=>{const e=$(sel);e.textContent=typeof m==="string"?m:displayError(m);e.classList.add("show");};
+
   if(CFG.google_client_id){
     const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;
-    s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:async resp=>{
-      try{saveAuth(await api("/api/auth/google",{method:"POST",body:JSON.stringify({credential:resp.credential})}));enterApp();}
-      catch(e){sErr("#li-err",e);}}});
-      google.accounts.id.renderButton($("#gbtn"),{theme:"outline",size:"large",width:366,text:"continue_with"});};
+    s.onload=()=>{try{
+      google.accounts.id.initialize({client_id:CFG.google_client_id,callback:async resp=>{
+        try{saveAuth(await api("/api/auth/google",{method:"POST",body:JSON.stringify({credential:resp.credential})}));enterApp();}
+        catch(e){sErr("#li-err",e);}}});
+      google.accounts.id.renderButton($("#gbtn"),{theme:"outline",size:"large",width:360,text:"continue_with"});
+    }catch{ $("#gbtn").style.display="none";$("#gdiv").style.display="none"; }};
+    s.onerror=()=>{$("#gbtn").style.display="none";$("#gdiv").style.display="none";};
     document.head.appendChild(s);
   }else{$("#gbtn").style.display="none";$("#gdiv").style.display="none";}
-  const sErr=(sel,m)=>{const e=$(sel);e.textContent=displayError(m);e.classList.add("show");};
-  $("#li-go").onclick=async()=>{$("#li-err").classList.remove("show");$("#li-go").disabled=true;
+
+  $("#li-go").onclick=async()=>{
+    $("#li-err").classList.remove("show");
     const email=$("#li-email").value.trim(),password=$("#li-pass").value;
-    if(!email){sErr("#li-err","Enter your college email.");$("#li-go").disabled=false;return;}
-    if(!/^\S+@\S+\.\S+$/.test(email)){sErr("#li-err","Enter a valid email address.");$("#li-go").disabled=false;return;}
-    if(!password){sErr("#li-err","Enter your password.");$("#li-go").disabled=false;return;}
+    if(!/^\S+@\S+\.\S+$/.test(email))return sErr("#li-err","Enter a valid email address.");
+    if(!password)return sErr("#li-err","Enter your password.");
+    $("#li-go").disabled=true;
     try{saveAuth(await api("/api/auth/login",{method:"POST",body:JSON.stringify({email,password})}));enterApp();}
-    catch(e){sErr("#li-err",e);}finally{$("#li-go").disabled=false;}};
+    catch(e){sErr("#li-err",e);}finally{$("#li-go").disabled=false;}
+  };
   $("#li-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#li-go").click();});
-  $("#cl-go").onclick=async()=>{$("#cl-err").classList.remove("show");$("#cl-go").disabled=true;
-    const college_slug=$("#cl-college").value.trim(),roll_no=$("#cl-roll").value.trim(),activation_code=$("#cl-code").value.trim(),password=$("#cl-pass").value;
-    if(!college_slug||!roll_no||!activation_code){sErr("#cl-err","Enter your college code, roll number, and activation code.");$("#cl-go").disabled=false;return;}
-    if(password.length<8){sErr("#cl-err","Choose a password with at least 8 characters.");$("#cl-go").disabled=false;return;}
-    try{saveAuth(await api("/api/auth/claim",{method:"POST",body:JSON.stringify({college_slug,roll_no,activation_code,password})}));toast("Account activated — welcome!");enterApp();}
-    catch(e){sErr("#cl-err",e);}finally{$("#cl-go").disabled=false;}};
+
+  $("#cl-go").onclick=async()=>{
+    $("#cl-err").classList.remove("show");
+    const college_slug=$("#cl-college").value.trim(),roll_no=$("#cl-roll").value.trim(),
+          activation_code=$("#cl-code").value.trim(),password=$("#cl-pass").value;
+    if(!college_slug||!roll_no||!activation_code)return sErr("#cl-err","Enter your college code, roll number and activation code.");
+    if(password.length<8)return sErr("#cl-err","Choose a password with at least 8 characters.");
+    $("#cl-go").disabled=true;
+    try{saveAuth(await api("/api/auth/claim",{method:"POST",body:JSON.stringify({college_slug,roll_no,activation_code,password})}));
+      toast("Account activated — welcome");enterApp();}
+    catch(e){sErr("#cl-err",e);}finally{$("#cl-go").disabled=false;}
+  };
   $("#cl-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#cl-go").click();});
 }
 
-/* ============================ shell ============================ */
-const ADMIN_NAV=[["Manage",[["#/dashboard","D","Dashboard"],["#/students","R","Students"],["#/import","↥","Import roster"],["#/drives-admin","C","Drives"]]],
-                 ["Configure",[["#/policy","P","Placement policy"],["#/notes","N","Notes & calendar"]]],
-                 ["Insights",[["#/analytics","A","Analytics"],["#/qa-admin","Q","Q&A inbox"],["#/edits","E","Edit requests"]]]];
-const CR_NAV=[["My branch",[["#/dashboard","D","Branch dashboard"],["#/students","R","Students"],["#/drives-admin","C","Drive pipeline"]]],
-              ["Student support",[["#/qa-admin","Q","Questions to escalate"]]]];
-const STUDENT_NAV=[["Placements",[["#/home","H","My placements"],["#/drives","C","Drives"],["#/feedback","F","Experiences"]]],
-                   ["You",[["#/profile","U","Profile"],["#/qa","Q","Q&A"]]]];
-const isPlacementOfficer=()=>AUTH&&["owner","admin"].includes(AUTH.role);
+/* ==========================================================================
+   Shell + navigation
+   ========================================================================== */
+const NAV={
+  admin:[["Work",[["#/today","Today"],["#/drives","Drives"],["#/students","Students"]]],
+         ["Configure",[["#/policy","Policy & buckets"],["#/planner","Planner"],["#/settings","Settings"]]],
+         ["Insight",[["#/analytics","Analytics"],["#/inbox","Questions & requests"]]]],
+  cr:[["My branch",[["#/today","Branch summary"],["#/drives","Drive pipeline"],["#/students","Students"]]],
+      ["Support",[["#/inbox","Questions"],["#/juniors","Juniors"]]]],
+  student:[["Placements",[["#/home","Home"],["#/drives","Drives"],["#/experiences","Experiences"]]],
+           ["You",[["#/profile","My details"],["#/qa","Ask a question"],["#/premium","Premium"]]]],
+  junior:[["Prepare",[["#/home","Home"],["#/experiences","Experiences"]]]],
+};
 function Shell(html,active){
-  const navigation=AUTH?.role==="sub_admin"?CR_NAV:(isStaff()?ADMIN_NAV:STUDENT_NAV);
-  const groups=navigation.map(([g,items])=>
-    `<div class="grp">${g}</div>`+items.map(([h,ic,l])=>`<a href="${h}" class="${h===active?'on':''}"><span class="ic">${ic}</span>${l}</a>`).join("")).join("");
+  applyRole();
+  const groups=NAV[uiRole()].map(([g,items])=>
+    `<div class="rgrp">${esc(g)}</div>`+
+    items.map(([h,l])=>`<a class="nav ${h===active?"on":""}" href="${h}">${esc(l)}</a>`).join("")
+  ).join("");
   root.innerHTML=`
   <div class="shell">
-    <aside class="side">
-      <a class="brand" href="/"><span class="dot"></span>Cohort</a>
-      <nav class="nav">${groups}</nav>
-      <div class="spacer"></div>
-      <div class="userbox">
-        <div style="font-weight:600">${esc(AUTH.user?.full_name||"—")}</div>
-        <div class="em">${esc(AUTH.user?.email||"")}</div>
-        <div style="margin:7px 0"><span class="chip mut">${esc(AUTH.role)}</span></div>
-        <div class="theme-toggle">
-          <button data-t="light" onclick="applyTheme('light')">☀ Light</button>
-          <button data-t="dark" onclick="applyTheme('dark')">☾ Dark</button>
+    <nav class="rail">
+      <span class="brand"><span class="mk"></span>Cohort</span>
+      ${groups}
+      <div class="rfoot">
+        <div class="who"><b>${esc(AUTH?.full_name||AUTH?.email||"Signed in")}</b>${esc(AUTH?.college_name||"")}</div>
+        <div class="row" style="padding:0 5px;border:0">
+          <div class="tt"><button type="button" data-t="dark">Dark</button><button type="button" data-t="light">Light</button></div>
         </div>
-        <button class="btn btn-ghost btn-sm" style="width:100%;color:var(--side-ink);border-color:rgba(255,255,255,.22)" onclick="signOut()">Sign out</button>
+        <div class="row" style="padding:0 5px;border:0"><button class="btn btn-s" id="signout" type="button" style="width:100%;justify-content:center">Sign out</button></div>
       </div>
-    </aside>
-    <main class="main">${html}</main>
+    </nav>
+    <main><div class="wrap" id="view">${html}</div></main>
   </div>`;
-  applyTheme(document.documentElement.dataset.theme);
+  $$(".tt button").forEach(b=>b.onclick=()=>applyTheme(b.dataset.t));
+  applyTheme(localStorage.getItem(THEME_KEY)||"dark");
+  $("#signout").onclick=signOut;
+}
+const spinner=`<div class="card"><div class="spin">Loading…</div></div>`;
+const emptyCard=(t,d)=>`<div class="card"><div class="empty"><div class="t">${esc(t)}</div><div>${esc(d||"")}</div></div></div>`;
+function errCard(e){return `<div class="card"><div class="empty"><div class="t">Couldn’t load this</div><div>${esc(displayError(e))}</div></div></div>`;}
+function setView(html){const v=$("#view");if(v)v.innerHTML=html;}
+
+/* small helper: render tabs and wire them without re-rendering the shell */
+function tabBar(items,current,onPick){
+  const id="tb"+Math.random().toString(36).slice(2,8);
+  setTimeout(()=>{const el=document.getElementById(id);if(!el)return;
+    el.querySelectorAll("button").forEach(b=>b.onclick=()=>onPick(b.dataset.k));},0);
+  return `<div class="tabs" id="${id}">${items.map(([k,l,c])=>
+    `<button type="button" data-k="${k}" class="${k===current?"on":""}">${esc(l)}${c?` <span class="quiet">${esc(c)}</span>`:""}</button>`).join("")}</div>`;
+}
+function modal(title,bodyHtml,onOk,okLabel){
+  const wrap=document.createElement("div");
+  wrap.className="modal";
+  wrap.innerHTML=`<div class="box"><div class="mh"><h2>${esc(title)}</h2>
+    <button class="x" type="button" aria-label="Close">✕</button></div>
+    <div class="mb">${bodyHtml}</div>
+    <div class="mf"><button class="btn" type="button" data-x>Cancel</button>
+      <button class="btn btn-p" type="button" data-ok>${esc(okLabel||"Save")}</button></div></div>`;
+  document.body.appendChild(wrap);
+  const close=()=>wrap.remove();
+  wrap.querySelector(".x").onclick=close;
+  wrap.querySelector("[data-x]").onclick=close;
+  wrap.onclick=e=>{if(e.target===wrap)close();};
+  wrap.querySelector("[data-ok]").onclick=async()=>{
+    const btn=wrap.querySelector("[data-ok]");btn.disabled=true;
+    try{await onOk(wrap);close();}catch(e){toast(displayError(e));btn.disabled=false;}
+  };
+  return wrap;
 }
 
-/* ====================== student views ====================== */
-async function StudentHome(){
-  Shell(`<div class="page-h"><h1>My placements</h1><span class="crumb" id="cn"></span></div>
-    <div class="stat-row" id="st"></div>
-    <div class="panel"><div class="panel-t">My applications</div>
-    <table><thead><tr><th>Company</th><th>Tier</th><th>Package</th><th>Stage</th><th>Status</th></tr></thead><tbody id="apps"></tbody></table></div>`,"#/home");
+/* ==========================================================================
+   ADMIN / CR — Today
+   ========================================================================== */
+async function TodayView(){
+  Shell(spinner,"#/today");
   try{
-    const me=await api("/api/auth/me");$("#cn").textContent=me.college?.name||"";
-    const p=(await api("/api/me/profile")).profile;
-    const rz=await api("/api/me/resume");
-    $("#st").innerHTML=[["Applications",p.applications],["Offers",p.offers],["CGPA",p.cgpa??"—"],["Resume",rz?"on file":"missing"]]
-      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:${String(v).length>7?'19px':'29px'}">${v}</div></div>`).join("");
-    const apps=await api("/api/me/applications");
-    $("#apps").innerHTML=apps.map(a=>`<tr><td>${esc(a.company)}</td>
-      <td><span class="chip ${a.category==='tier1'?'warn':'mut'}">${esc(a.category||'—')}</span></td>
-      <td class="mono">${money(a.package)}</td><td>${RL[a.current_round]||esc(a.current_round)}</td>
-      <td>${a.status==='placed'?'<span class="chip ok">placed</span>':a.status==='rejected'?'<span class="chip bad">not selected</span>':'<span class="chip mut">in progress</span>'}</td></tr>`).join("")
-      ||`<tr><td colspan="5"><div class="empty"><b>No applications yet</b>Head to Drives and register for one.</div></td></tr>`;
-  }catch(e){toast(e.message);}
+    const stats=await api("/api/dashboard/stats");
+    let reminders=[],drives=[],notifs=[];
+    if(isOfficer()){
+      [reminders,drives,notifs]=await Promise.all([
+        api("/api/reminders").catch(()=>[]),
+        api("/api/companies").catch(()=>[]),
+        api("/api/notifications").catch(()=>[]),
+      ]);
+    }
+    const t=stats.totals||{};
+    const drafts=drives.filter(d=>d.status===0);
+    const closing=drives.filter(d=>d.status===1);
+    const due=reminders.filter(r=>!r.done_at&&new Date(r.due_at)<=new Date(Date.now()+864e5));
+    const tasks=[];
+    drafts.forEach(d=>tasks.push([`${d.name} is not published yet`,
+      "Students can't see it until you publish.",`<button class="btn btn-p btn-s" data-pub="${d.id}" type="button">Publish</button>`]));
+    if(notifs.length)tasks.push([`${notifs.length} question${notifs.length>1?"s":""} passed up by CRs`,
+      "Waiting for your answer.",`<a class="btn btn-s" href="#/inbox">Open</a>`]);
+    due.forEach(r=>tasks.push([r.title,`Reminder due ${fmtDate(r.due_at)}`,
+      `<button class="btn btn-s" data-done="${r.id}" type="button">Done</button>`]));
+
+    setView(`
+    <div class="head"><div><h1>${isOfficer()?"Today":"Branch summary"}</h1>
+      <div class="sub">${esc(AUTH?.college_name||"")}${stats.scope==="branch"?" · your branch only":""}</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-p" id="newdrive" type="button">Add company / drive</button></div>`:""}</div>
+    ${tasks.length?`<div class="card"><div class="ch"><h2>Needs you</h2><span class="tag bad">${tasks.length}</span></div>
+      <div class="list">${tasks.map(([t1,d1,btn])=>`<div class="row"><div class="bd"><div class="t">${esc(t1)}</div>
+        <div class="d">${esc(d1)}</div></div><div class="rt">${btn}</div></div>`).join("")}</div></div>`
+      :emptyCard("Nothing needs you right now","Published drives are running and no questions are waiting.")}
+    <div class="mx">
+      <div class="m"><div class="k">Students</div><div class="v">${t.students??0}</div><div class="d">on the roster</div></div>
+      <div class="m"><div class="k">Drives</div><div class="v">${t.companies??0}</div><div class="d">${closing.length} open</div></div>
+      <div class="m"><div class="k">Applications</div><div class="v">${t.applications??0}</div><div class="d">${t.active??0} in process</div></div>
+      <div class="m"><div class="k">Placed</div><div class="v">${t.placed??0}</div><div class="d">${stats.placement_rate??0}% of applications</div></div>
+    </div>
+    <div class="card"><div class="ch"><h2>Where students are</h2></div>
+      <div class="bars">${(stats.funnel||[]).map(f=>{
+        const max=Math.max(1,...(stats.funnel||[]).map(x=>x.count));
+        return `<div class="bar"><div class="l">${esc(RL[f.round]||f.round)}</div>
+          <div class="t"><div class="f" style="width:${Math.round(f.count/max*100)}%"></div></div>
+          <div class="v">${f.count}</div></div>`;}).join("")}</div>
+    </div>`);
+
+    $$("[data-pub]").forEach(b=>b.onclick=()=>publishDrive(b.dataset.pub));
+    $$("[data-done]").forEach(b=>b.onclick=async()=>{
+      try{await api(`/api/reminders/${b.dataset.done}`,{method:"PATCH",body:JSON.stringify({done:true})});
+        toast("Marked done");TodayView();}catch(e){toast(displayError(e));}});
+    const nd=$("#newdrive");if(nd)nd.onclick=addDriveModal;
+  }catch(e){setView(errCard(e));}
 }
 
-async function DrivesStudent(){
-  Shell(`<div class="page-h"><h1>Drives</h1><a class="btn btn-ghost btn-sm" href="#/profile">Manage resume →</a></div><div id="list"></div>`,"#/drives");
+async function publishDrive(id){
   try{
-    const ds=await api("/api/me/drives");
-    $("#list").innerHTML=ds.map(d=>`
-      <div class="drive-card">
-        <div class="top">
-          <div><span class="nm">${esc(d.name)}</span>
-            <span class="chip ${d.category==='tier1'?'warn':d.category==='dream'?'mut':'gray'}" style="margin-left:8px">${esc(d.category||'—')}</span>
-            ${d.status!==1?'<span class="chip gray" style="margin-left:6px">closed</span>':''}</div>
-          <div style="display:flex;gap:12px;align-items:center">
-            <span class="pkg">${money(d.package)}</span>
-            ${d.eligible&&d.status===1?`<button class="btn btn-primary btn-sm" onclick="registerDrive(${d.id},'${esc(d.name)}')">Register</button>`
-              :d.eligible?'<span class="chip gray">not open</span>':'<span class="chip bad">not eligible</span>'}
-          </div>
+    const r=await api(`/api/companies/${id}/publish`,{method:"POST"});
+    toast(r.already?"Already published":(r.announced?"Published — students notified":
+      "Published. Set a verified group address in Settings to announce it by email."));
+    route();
+  }catch(e){toast(displayError(e));}
+}
+
+/* ==========================================================================
+   Drives — companies AND drives are the same record. One screen.
+   ========================================================================== */
+let driveFilter="open", driveQuery="", driveBucket="";
+async function DrivesView(){
+  Shell(spinner,"#/drives");
+  try{
+    const [drives]=await Promise.all([api("/api/companies")]);
+    if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
+    const counts={all:drives.length,open:drives.filter(d=>d.status===1).length,
+      draft:drives.filter(d=>d.status===0).length,closed:drives.filter(d=>d.status===2).length};
+    const q=driveQuery.trim().toLowerCase();
+    const shown=drives.filter(d=>{
+      if(driveFilter==="open"&&d.status!==1)return false;
+      if(driveFilter==="draft"&&d.status!==0)return false;
+      if(driveFilter==="closed"&&d.status!==2)return false;
+      if(driveBucket&&d.category!==driveBucket)return false;
+      if(q&&!(`${d.name} ${bucketLabel(d.category)}`.toLowerCase().includes(q)))return false;
+      return true;
+    });
+    setView(`
+    <div class="head"><div><h1>Drives</h1>
+      <div class="sub">${counts.open} open · ${counts.draft} not published · ${counts.all} this year</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-p" id="newdrive" type="button">Add company / drive</button></div>`:""}</div>
+    <input class="search" id="dq" type="search" placeholder="Search by company or bucket" value="${esc(driveQuery)}">
+    <div class="card">
+      <div class="ch">
+        <div class="filters">
+          ${[["open","Open",counts.open],["draft","Not published",counts.draft],
+             ["closed","Closed",counts.closed],["all","All",counts.all]]
+            .map(([k,l,c])=>`<button type="button" data-f="${k}" class="${driveFilter===k?"on":""}">${l} <span class="quiet">${c}</span></button>`).join("")}
         </div>
-        ${d.reasons.length?`<ul class="reasons">${d.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
-      </div>`).join("")||`<div class="panel"><div class="empty"><b>No drives yet</b>They'll appear here when your cell posts one.</div></div>`;
-  }catch(e){toast(e.message);}
+        <div class="rt"><select id="bq" style="width:auto"><option value="">All buckets</option>
+          ${BUCKETS.map(b=>`<option value="${esc(b.key)}" ${driveBucket===b.key?"selected":""}>${esc(b.label)}</option>`).join("")}
+        </select></div>
+      </div>
+      ${shown.length?`<div class="list">${shown.map(d=>`
+        <div class="row">
+          <div class="bd">
+            <div class="t">${esc(d.name)} <span class="tag">${esc(bucketLabel(d.category))}</span>
+              <span class="tag ${d.status===1?"ok":d.status===0?"warn":""}">${STATUS_LABEL[d.status]||"—"}</span></div>
+            <div class="d">${money(d.package)} · ${d.registered||0} registered · ${d.placed||0} placed
+              ${d.eligible_branches&&d.eligible_branches.length?" · "+esc(d.eligible_branches.join(", ")):""}</div>
+          </div>
+          <div class="rt">
+            ${isOfficer()&&d.status===0?`<button class="btn btn-p btn-s" data-pub="${d.id}" type="button">Publish</button>`:""}
+            <a class="btn btn-s" href="#/drive/${d.id}">Open</a>
+          </div>
+        </div>`).join("")}</div>`
+      :`<div class="empty"><div class="t">Nothing here</div><div>Try a different filter or search.</div></div>`}
+    </div>`);
+    $$("[data-f]").forEach(b=>b.onclick=()=>{driveFilter=b.dataset.f;DrivesView();});
+    $("#bq").onchange=e=>{driveBucket=e.target.value;DrivesView();};
+    const dq=$("#dq");
+    dq.oninput=e=>{driveQuery=e.target.value;clearTimeout(dq._t);dq._t=setTimeout(DrivesView,220);};
+    $$("[data-pub]").forEach(b=>b.onclick=()=>publishDrive(b.dataset.pub));
+    const nd=$("#newdrive");if(nd)nd.onclick=addDriveModal;
+    if(driveQuery){dq.focus();dq.setSelectionRange(dq.value.length,dq.value.length);}
+  }catch(e){setView(errCard(e));}
 }
-async function registerDrive(id,name){
-  try{await api("/api/me/register/"+id,{method:"POST"});toast("Registered for "+name+" ✓");DrivesStudent();}
-  catch(e){toast(e.message);}
+
+/* Add a company = add a drive. Bucket chosen here; policy stays central
+   unless the officer explicitly asks to customise this one. */
+async function addDriveModal(){
+  if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
+  const body=`
+    <label for="m-name">Company name</label><input id="m-name" placeholder="e.g. Nova Analytics">
+    <label for="m-role">Role</label><input id="m-role" placeholder="e.g. Software Engineer">
+    <label for="m-bucket">Bucket</label>
+    <select id="m-bucket">${BUCKETS.map(b=>`<option value="${esc(b.key)}">${esc(b.label)}</option>`).join("")}</select>
+    <p class="quiet" style="margin-top:6px" id="m-bhint"></p>
+    <label for="m-pkg">Package (₹ per year)</label><input id="m-pkg" type="number" min="0" step="10000" placeholder="1200000">
+    <label for="m-dl">Last date to apply</label><input id="m-dl" type="date">
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
+      <div class="t" style="font-weight:600">Any customisation for this company?</div>
+      <p class="quiet" style="margin:4px 0 10px">Your central placement policy applies to every drive. Say yes only if this company needs something different.</p>
+      <label class="col" for="m-cust-no" style="margin:0"><input type="radio" name="cust" id="m-cust-no" value="no" checked>
+        No — use the college policy</label>
+      <label class="col" for="m-cust-yes" style="margin:0"><input type="radio" name="cust" id="m-cust-yes" value="yes">
+        Yes — set eligibility and rules for this drive only</label>
+    </div>`;
+  modal("Add company / drive",body,async wrap=>{
+    const name=wrap.querySelector("#m-name").value.trim();
+    if(!name)throw new ApiError("Enter the company name.");
+    const payload={name,category:wrap.querySelector("#m-bucket").value,
+      package:Number(wrap.querySelector("#m-pkg").value)||null,
+      deadline:wrap.querySelector("#m-dl").value||null};
+    const r=await api("/api/companies",{method:"POST",body:JSON.stringify(payload)});
+    const role=wrap.querySelector("#m-role").value.trim();
+    if(role){try{await api(`/api/companies/${r.id}/details`,{method:"PATCH",
+      body:JSON.stringify({role_title:role})});}catch{/* role is optional */}}
+    const custom=wrap.querySelector("#m-cust-yes").checked;
+    toast(custom?"Drive created as a draft — set its rules now":"Drive created as a draft using the college policy");
+    location.hash=custom?`#/drive/${r.id}?tab=rules`:`#/drive/${r.id}`;
+  },"Create drive");
+  const sel=document.querySelector("#m-bucket"),hint=document.querySelector("#m-bhint");
+  const showHint=()=>{const b=BUCKETS.find(x=>x.key===sel.value);
+    hint.textContent=b?`${b.label}: ${b.ignores_cap?"placed students may still sit":"counts toward the offer cap"}`
+      +(b.min_package?` · from ${(b.min_package/100000).toFixed(1)} LPA`:"")
+      +(b.max_package?` · up to ${(b.max_package/100000).toFixed(1)} LPA`:""):"";};
+  if(sel){sel.onchange=showHint;showHint();}
+}
+
+/* ==========================================================================
+   One drive. Companies and drives are the same record — this is the only
+   place a drive is inspected, and every tab renders in a single pass so
+   the tab handlers are never wired to a detached element.
+   ========================================================================== */
+let driveTab="students", picked=new Set();
+async function DriveView(id){
+  Shell(spinner,"#/drives");
+  picked=new Set();
+  try{
+    if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
+    const d=await api(`/api/companies/${id}/details`);
+    const tabs=[["students","Students"],["details","Details"]];
+    if(isOfficer())tabs.push(["rules","Who can apply"],["downloads","Downloads"],["emails","Emails"]);
+
+    const draw=async()=>{
+      let body="",wire=null;
+      try{
+        if(driveTab==="students"){const r=await api(`/api/companies/${id}/registrations`);
+          body=studentsTab(r);wire=()=>wireStudents(id);}
+        else if(driveTab==="details"){const r=await api(`/api/companies/${id}/registrations`).catch(()=>[]);
+          body=detailsTab(d,r);wire=()=>wireDetails(id,d,draw);}
+        else if(driveTab==="rules"){const p=await api("/api/policy").catch(()=>({}));
+          body=rulesTab(d,p);wire=()=>wireRules(id,d,draw);}
+        else if(driveTab==="downloads"){const m=await api("/api/export/columns");
+          body=downloadsTab(m);wire=()=>wireDownloads(id,m,draw);}
+        else{const log=await api(`/api/companies/${id}/notifications`).catch(()=>[]);
+          body=emailsTab(d,log);wire=()=>wireEmails(id);}
+      }catch(e){body=errCard(e);}
+
+      const head=`<div class="head"><div><a class="back" href="#/drives">← All drives</a>
+        <h1 style="margin-top:3px">${esc(d.name)}</h1>
+        <div class="sub">${esc(bucketLabel(d.category))} · ${money(d.package)} · ${STATUS_LABEL[d.status]}
+          ${d.role_title?" · "+esc(d.role_title):""}</div></div>
+        <div class="rt">
+          ${isOfficer()&&d.status===0?`<button class="btn btn-p" id="pub" type="button">Publish</button>`:""}
+          ${isOfficer()&&d.status===1?`<button class="btn" id="remind" type="button">Send test reminder</button>`:""}
+        </div></div>`;
+      setView(head+tabBar(tabs,driveTab,k=>{driveTab=k;picked=new Set();draw();})+body);
+
+      const p=$("#pub");if(p)p.onclick=()=>publishDrive(id);
+      const r=$("#remind");if(r)r.onclick=async()=>{
+        r.disabled=true;
+        try{const res=await api(`/api/companies/${id}/test-reminder`,{method:"POST"});
+          toast(res.sent?`Reminder sent to ${res.recipients} student${res.recipients===1?"":"s"}`
+                        :"Already sent today — not sending again");}
+        catch(e){toast(displayError(e));}finally{r.disabled=false;}};
+      if(wire)wire();
+    };
+    await draw();
+  }catch(e){setView(errCard(e));}
+}
+
+/* ------------------------------- students ------------------------------- */
+function studentsTab(regs){
+  if(!regs.length)return emptyCard("Nobody has registered yet",
+    "Students see this drive once it is published and they meet the conditions.");
+  const groups={};
+  regs.forEach(r=>{(groups[r.current_round]=groups[r.current_round]||[]).push(r);});
+  return `
+  <div class="card">
+    <div class="bulk" id="bulkbar" style="display:none">
+      <span id="bulkn">0 selected</span>
+      <div class="rt">
+        <select id="bulkround" style="width:auto">${ROUNDS.map(r=>`<option value="${r}">Move to ${esc(RL[r])}</option>`).join("")}</select>
+        <button class="btn btn-s" id="bulkgo" type="button">Apply</button>
+        ${isOfficer()?`<button class="btn btn-s" id="bulkrej" type="button">Not selected</button>
+        <button class="btn btn-s" id="bulkplace" type="button">Mark placed</button>`:""}
+      </div>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th style="width:32px"><input type="checkbox" id="selall" aria-label="Select all"></th>
+        <th>Student</th><th>Roll</th><th>Branch</th><th>CGPA</th><th>Round</th><th>Status</th><th>Resume</th></tr></thead>
+      <tbody>${ROUNDS.filter(r=>groups[r]).map(r=>groups[r].map(s=>`
+        <tr><td><input type="checkbox" class="pick" value="${s.id}" aria-label="Select ${esc(s.full_name||s.roll_no)}"></td>
+          <td>${esc(s.full_name||"—")}</td><td class="n">${esc(s.roll_no)}</td><td>${esc(s.branch||"—")}</td>
+          <td class="n">${s.cgpa??"—"}</td><td>${esc(RL[s.current_round]||s.current_round)}</td>
+          <td><span class="tag ${s.status==="placed"?"ok":s.status==="rejected"?"bad":""}">${esc(s.status)}</span></td>
+          <td>${s.has_resume?'<span class="tag ok">yes</span>':'<span class="tag warn">missing</span>'}</td>
+        </tr>`).join("")).join("")}</tbody>
+    </table></div>
+    <div class="tf"><span>${regs.length} registered · ${regs.filter(r=>r.has_resume).length} with a resume on file
+      ${isOfficer()?"":"· CRs can move rounds, not final outcomes"}</span></div>
+  </div>`;
+}
+function wireStudents(id){
+  const boxes=$$(".pick"),bar=$("#bulkbar"),n=$("#bulkn");
+  if(!boxes.length)return;
+  const sync=()=>{picked=new Set(boxes.filter(b=>b.checked).map(b=>Number(b.value)));
+    if(bar){bar.style.display=picked.size?"":"none";n.textContent=`${picked.size} selected`;}};
+  boxes.forEach(b=>b.onchange=sync);
+  const sa=$("#selall");if(sa)sa.onchange=()=>{boxes.forEach(b=>b.checked=sa.checked);sync();};
+  const send=async payload=>{
+    if(!picked.size)return toast("Select at least one student");
+    try{const r=await api("/api/applications/bulk",{method:"PATCH",
+      body:JSON.stringify({ids:[...picked],...payload})});
+      toast(`Updated ${r.updated} student${r.updated===1?"":"s"}`);
+      DriveView(id);
+    }catch(e){toast(displayError(e));}
+  };
+  const go=$("#bulkgo");if(go)go.onclick=()=>send({current_round:$("#bulkround").value});
+  const rej=$("#bulkrej");if(rej)rej.onclick=()=>send({status:"rejected"});
+  const pl=$("#bulkplace");if(pl)pl.onclick=()=>send({status:"placed",current_round:"final_placement"});
+}
+
+/* -------------------------------- details ------------------------------- */
+function detailsTab(d,regs){
+  return `
+  <div class="card"><div class="list">
+    <div class="row"><div class="bd"><div class="t">Bucket</div>
+      <div class="d">${esc(bucketLabel(d.category))} — chosen when the company was added</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-s" id="ed-bucket" type="button">Change</button></div>`:""}</div>
+    <div class="row"><div class="bd"><div class="t">Package</div><div class="d">${money(d.package)}</div></div></div>
+    <div class="row"><div class="bd"><div class="t">Role</div><div class="d">${esc(d.role_title||"Not set")}</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-s" id="ed-role" type="button">Change</button></div>`:""}</div>
+    <div class="row"><div class="bd"><div class="t">Test date and venue</div>
+      <div class="d">${d.test_date?fmtDate(d.test_date):"Not set"}${d.venue?" · "+esc(d.venue):""}</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-s" id="ed-test" type="button">Change</button></div>`:""}</div>
+    <div class="row"><div class="bd"><div class="t">Last date to apply</div><div class="d">${fmtDate(d.deadline)}</div></div></div>
+    <div class="row"><div class="bd"><div class="t">Company-specific restriction</div>
+      <div class="d">${d.restriction_note?esc(d.restriction_note)
+        :"None. If this company restricts who may apply, write the reason here — students are shown the reason instead of a blank list."}</div></div>
+      ${isOfficer()?`<div class="rt"><button class="btn btn-s" id="ed-note" type="button">Change</button></div>`:""}</div>
+    <div class="row"><div class="bd"><div class="t">Registered</div>
+      <div class="d">${regs.length} students · ${regs.filter(r=>r.status==="placed").length} placed</div></div></div>
+    <div class="row"><div class="bd"><div class="t">Status</div>
+      <div class="d">${STATUS_LABEL[d.status]}${d.status===0?" — students cannot see this drive yet":""}</div></div></div>
+  </div></div>`;
+}
+function wireDetails(id,d,redraw){
+  const save=async(payload,msg)=>{
+    await api(`/api/companies/${id}/details`,{method:"PATCH",body:JSON.stringify(payload)});
+    Object.assign(d,payload);toast(msg);redraw();
+  };
+  const b=$("#ed-bucket");
+  if(b)b.onclick=()=>modal("Change bucket",
+    `<label for="nb">Bucket</label><select id="nb">${BUCKETS.map(x=>
+      `<option value="${esc(x.key)}" ${x.key===d.category?"selected":""}>${esc(x.label)}</option>`).join("")}</select>
+     <p class="quiet" style="margin-top:8px">The bucket decides which offer-cap rules apply from your central policy.</p>`,
+    async w=>{const category=w.querySelector("#nb").value;
+      await api(`/api/companies/${id}`,{method:"PATCH",body:JSON.stringify({category})});
+      d.category=category;toast("Bucket changed");redraw();});
+  const r=$("#ed-role");
+  if(r)r.onclick=()=>modal("Role",`<label for="nr">Role</label><input id="nr" value="${esc(d.role_title||"")}">`,
+    async w=>save({role_title:w.querySelector("#nr").value.trim()},"Role saved"));
+  const t=$("#ed-test");
+  if(t)t.onclick=()=>modal("Test date and venue",
+    `<label for="nt">Test date</label><input id="nt" type="date" value="${d.test_date?String(d.test_date).slice(0,10):""}">
+     <label for="nv">Venue</label><input id="nv" value="${esc(d.venue||"")}" placeholder="e.g. Block C labs">`,
+    async w=>save({test_date:w.querySelector("#nt").value||null,
+      venue:w.querySelector("#nv").value.trim()},"Saved"));
+  const n=$("#ed-note");
+  if(n)n.onclick=()=>modal("Company-specific restriction",
+    `<label for="nn">Reason shown to students</label>
+     <input id="nn" value="${esc(d.restriction_note||"")}" placeholder="e.g. Open to women candidates only">
+     <p class="quiet" style="margin-top:8px">This is the wording students see. It does not enforce anything on its own —
+     add the matching condition under <b>Who can apply</b>. Recorded with your name.</p>`,
+    async w=>save({restriction_note:w.querySelector("#nn").value.trim()},"Saved"));
+}
+
+/* --------------------------------- rules -------------------------------- */
+function rulesTab(d,policy){
+  const tree=d.eligibility_rules||{};
+  const conds=Array.isArray(tree.all)?tree.all:[];
+  const custom=d.custom_policy&&Object.keys(d.custom_policy).length?d.custom_policy:null;
+  return `
+  <div class="card"><div class="ch"><h2>Who can apply to this drive</h2>
+    <div class="rt"><button class="btn btn-s" id="addcond" type="button">Add condition</button>
+      <button class="btn btn-s" id="preview" type="button">Preview count</button></div></div>
+    ${conds.length?`<div class="list">${conds.map((c,i)=>`<div class="row">
+      <div class="bd"><div class="t">${esc(c.label||c.field)} — ${esc(OPTEXT[c.op]||c.op)}
+        ${esc(Array.isArray(c.value)?c.value.join(", "):String(c.value))}</div>
+        <div class="d mono">${esc(c.field)}</div></div>
+      <div class="rt"><button class="btn btn-s" data-del="${i}" type="button">Remove</button></div></div>`).join("")}</div>`
+    :`<div class="empty"><div class="t">No extra conditions</div>
+      <div>Anyone the college policy allows can apply. Add a condition for CGPA, branch or anything else this company asks for.</div></div>`}
+  </div>
+  <div class="card"><div class="ch"><h2>Offer rules for this drive</h2>
+    <span class="tag ${custom?"warn":"ok"}">${custom?"customised":"college policy"}</span></div>
+    <div class="list">
+      <div class="row"><div class="bd">
+        <div class="t">${custom?"This drive overrides the college policy":"Using your central policy"}</div>
+        <div class="d">${esc(describePolicy(custom||policy))}${custom&&custom.reason?` · ${esc(custom.reason)}`:""}</div></div>
+        <div class="rt">
+          ${custom?`<button class="btn btn-s" id="clearcustom" type="button">Use college policy</button>`
+                  :`<button class="btn btn-s" id="setcustom" type="button">Customise for this drive</button>`}
+          <a class="btn btn-s" href="#/policy">Edit central policy</a></div></div>
+    </div>
+    <div class="tf"><span>Set the policy once under Policy &amp; buckets. Only customise here when this company genuinely needs something different.</span></div>
+  </div>`;
+}
+const OPTEXT={">=":"at least","<=":"at most",">":"more than","<":"less than",
+  "==":"exactly","!=":"not","in":"one of","not_in":"not one of","between":"between"};
+
+function wireRules(id,d,redraw){
+  const tree=d.eligibility_rules||{};
+  const list=Array.isArray(tree.all)?tree.all.slice():[];
+  const persist=async()=>{
+    await api(`/api/companies/${id}/rules`,{method:"PUT",
+      body:JSON.stringify({eligibility_rules:list.length?{all:list}:{}})});
+    d.eligibility_rules=list.length?{all:list}:{};
+  };
+  $$("[data-del]").forEach(b=>b.onclick=async()=>{
+    list.splice(Number(b.dataset.del),1);
+    try{await persist();toast("Condition removed");redraw();}catch(e){toast(displayError(e));}});
+  const add=$("#addcond");
+  if(add)add.onclick=()=>{
+    const body=`
+      <label for="c-field">Field</label>
+      <select id="c-field"><option value="cgpa">CGPA</option><option value="backlogs">Backlogs</option>
+        <option value="branch">Branch</option><option value="gender">Gender</option>
+        <option value="tenth_pct">10th %</option><option value="twelfth_pct">12th %</option></select>
+      <label for="c-op">Condition</label>
+      <select id="c-op"><option value="&gt;=">at least</option><option value="&lt;=">at most</option>
+        <option value="==">exactly</option><option value="in">one of</option></select>
+      <label for="c-val">Value</label>
+      <input id="c-val" placeholder="7.0 — or for “one of”: CSE, ISE, ECE">
+      <p class="quiet" style="margin-top:10px">A student who doesn't qualify is told exactly which condition they missed,
+      in these words. Keep the wording something you'd be happy for them to read.</p>`;
+    modal("Add a condition",body,async w=>{
+      const field=w.querySelector("#c-field").value;
+      const op=w.querySelector("#c-op").value;
+      const raw=w.querySelector("#c-val").value.trim();
+      if(!raw)throw new ApiError("Enter a value.");
+      const LABELS={cgpa:"CGPA",backlogs:"Backlogs",branch:"Branch",gender:"Gender",
+        tenth_pct:"10th %",twelfth_pct:"12th %"};
+      let value=raw;
+      if(op==="in")value=raw.split(",").map(s=>s.trim()).filter(Boolean);
+      else if(raw!==""&&!isNaN(Number(raw)))value=Number(raw);
+      list.push({field,op,value,label:LABELS[field]||field});
+      await persist();toast("Condition added");redraw();
+    },"Add");
+  };
+  const pv=$("#preview");
+  if(pv)pv.onclick=async()=>{
+    try{const r=await api(`/api/companies/${id}/eligibility-preview`);
+      toast(`${r.eligible} of ${r.total} students qualify`);}catch(e){toast(displayError(e));}};
+  const sc=$("#setcustom");
+  if(sc)sc.onclick=()=>modal("Customise offer rules for this drive",
+    `<p class="quiet">Your central policy already applies to every drive. Only change this if this company asked for something different.</p>
+     <label for="cp-up" style="margin-top:12px">Who may sit if they already have an offer?</label>
+     <select id="cp-up"><option value="none">Anyone</option>
+       <option value="multiplier">Only if this drive pays N× their current offer</option>
+       <option value="higher_slab">Only if this drive is in a higher bucket</option>
+       <option value="both">Both conditions</option></select>
+     <label for="cp-m">Multiplier</label><input id="cp-m" type="number" min="1" step="0.1" value="1.5">
+     <label for="cp-r">Why (recorded)</label><input id="cp-r" placeholder="e.g. Company asked for a wider pool">`,
+    async w=>{
+      await api(`/api/companies/${id}/details`,{method:"PATCH",body:JSON.stringify({custom_policy:{
+        upgrade:w.querySelector("#cp-up").value,
+        multiplier:Number(w.querySelector("#cp-m").value)||1,
+        reason:w.querySelector("#cp-r").value.trim()}})});
+      toast("Customised for this drive");DriveView(id);},"Save");
+  const cc=$("#clearcustom");
+  if(cc)cc.onclick=async()=>{
+    try{await api(`/api/companies/${id}/details`,{method:"PATCH",body:JSON.stringify({custom_policy:null})});
+      toast("Back to the college policy");DriveView(id);}catch(e){toast(displayError(e));}};
+}
+
+/* ------------------------------- downloads ------------------------------ */
+function downloadsTab(meta){
+  const def=meta.templates.find(t=>t.is_default)||{columns:["roll_no","full_name","branch","email","cgpa"]};
+  const chosen=new Set(def.columns);
+  return `
+  <div class="card"><div class="ch"><h2>Registration sheet</h2>
+    <div class="rt">${meta.templates.map(t=>
+      `<button class="btn btn-s" data-tpl="${esc(t.name)}" type="button">${esc(t.name)}</button>`).join("")}</div></div>
+    <div class="cols">${meta.columns.map(c=>`<label class="col" for="x-${c.key}">
+      <input type="checkbox" id="x-${c.key}" value="${c.key}" ${chosen.has(c.key)?"checked":""}>${esc(c.label)}</label>`).join("")}</div>
+    <div class="tf"><span id="ncols">${chosen.size} of ${meta.columns.length} columns</span>
+      <div class="rt"><button class="btn btn-s" id="savetpl" type="button">Save as preset</button>
+        <button class="btn btn-p btn-s" id="dlcsv" type="button">Download CSV</button></div></div>
+  </div>
+  <div class="card"><div class="ch"><h2>Resumes</h2></div>
+    <div class="list">
+      <div class="row"><div class="bd"><div class="t">Everyone registered</div>
+        <div class="d">One zip, foldered by company and test date, one PDF per roll number.
+          Students without a resume are listed in missing.txt.</div></div>
+        <div class="rt"><button class="btn btn-p btn-s" id="dlzip" type="button">Download .zip</button></div></div>
+      <div class="row"><div class="bd"><div class="t">Only those still in the process</div>
+        <div class="d">Skips anyone marked not selected.</div></div>
+        <div class="rt"><button class="btn btn-s" id="dlzip2" type="button">Download .zip</button></div></div>
+    </div>
+    <div class="tf"><span>Every download is recorded with your name, the drive and how many students were included.</span></div>
+  </div>`;
+}
+function wireDownloads(id,meta,redraw){
+  const cols=()=>$$(".cols input:checked").map(i=>i.value);
+  const sync=()=>{const n=$("#ncols");if(n)n.textContent=`${cols().length} of ${meta.columns.length} columns`;};
+  $$(".cols input").forEach(i=>i.onchange=sync);
+  $$("[data-tpl]").forEach(b=>b.onclick=()=>{
+    const t=meta.templates.find(x=>x.name===b.dataset.tpl);if(!t)return;
+    const set=new Set(t.columns);
+    $$(".cols input").forEach(i=>i.checked=set.has(i.value));sync();});
+  $("#dlcsv").onclick=()=>{
+    const c=cols();if(!c.length)return toast("Choose at least one column");
+    download(`/api/companies/${id}/export?cols=${encodeURIComponent(c.join(","))}`,"registrations.csv");};
+  $("#dlzip").onclick=()=>download(`/api/companies/${id}/resumes`,"resumes.zip");
+  $("#dlzip2").onclick=()=>download(`/api/companies/${id}/resumes?cleared_only=true`,"resumes.zip");
+  $("#savetpl").onclick=()=>{
+    const c=cols();if(!c.length)return toast("Choose at least one column");
+    modal("Save this column set",`<label for="tn">Name</label><input id="tn" placeholder="e.g. For Nova">`,
+      async w=>{const name=w.querySelector("#tn").value.trim();
+        if(!name)throw new ApiError("Give it a name.");
+        await api("/api/export/templates",{method:"POST",body:JSON.stringify({name,columns:c})});
+        toast("Preset saved");redraw();});
+  };
+}
+
+/* --------------------------------- emails ------------------------------- */
+const MAIL_KIND={drive_published:"Drive announced to students",test_reminder:"Test reminder",
+  placed_congrats:"Congratulations to placed students",feedback_reminder:"Feedback form reminder"};
+function emailsTab(d,log){
+  return `
+  <div class="card"><div class="ch"><h2>Emails for this drive</h2></div>
+    ${log.length?`<div class="list">${log.map(l=>`<div class="row"><div class="bd">
+      <div class="t">${esc(MAIL_KIND[l.kind]||l.kind)}</div>
+      <div class="d">${l.recipients} recipient${l.recipients===1?"":"s"} · ${new Date(l.sent_at).toLocaleString()}</div>
+      </div><div class="rt"><span class="tag ok">sent</span></div></div>`).join("")}</div>`
+    :`<div class="empty"><div class="t">Nothing sent yet</div>
+      <div>Publishing announces the drive to your student group. Test reminders go only to registered students, when you press the button.</div></div>`}
+    <div class="list" style="border-top:1px solid var(--line)">
+      <div class="row"><div class="bd"><div class="t">Send the test reminder now</div>
+        <div class="d">Goes to students registered for this drive. Pressing twice in one day sends once.</div></div>
+        <div class="rt"><button class="btn btn-p btn-s" id="sendnow" type="button"
+          ${d.status!==1?"disabled":""}>Send</button></div></div>
+    </div>
+    <div class="tf"><span>${d.status!==1?"Publish the drive before reminding students.":"Congratulations and feedback emails send themselves when you record an offer."}</span></div>
+  </div>`;
+}
+function wireEmails(id){
+  const b=$("#sendnow");
+  if(b&&!b.disabled)b.onclick=async()=>{
+    b.disabled=true;
+    try{const r=await api(`/api/companies/${id}/test-reminder`,{method:"POST"});
+      toast(r.sent?`Sent to ${r.recipients} student${r.recipients===1?"":"s"}`:"Already sent today");
+      DriveView(id);}
+    catch(e){toast(displayError(e));b.disabled=false;}};
+}
+
+/* ==========================================================================
+   Students
+   ========================================================================== */
+let studentQuery="";
+async function StudentsView(){
+  Shell(spinner,"#/students");
+  try{
+    const rows=await api("/api/students"+(studentQuery?`?q=${encodeURIComponent(studentQuery)}`:""));
+    setView(`
+    <div class="head"><div><h1>Students</h1>
+      <div class="sub">${rows.length} shown${rows.length>=500?" (first 500 — search to narrow)":""}</div></div>
+      <div class="rt">
+        ${isOfficer()?`<button class="btn" id="codes" type="button">Sign-in codes</button>
+        <button class="btn btn-p" id="import" type="button">Import roster</button>`:""}
+      </div></div>
+    <input class="search" id="sq" type="search" placeholder="Search by name, roll number or email" value="${esc(studentQuery)}">
+    <div class="card">
+      ${rows.length?`<div class="tw"><table>
+        <thead><tr><th>Name</th><th>Roll</th><th>Branch</th><th>CGPA</th><th>Backlogs</th><th>Account</th></tr></thead>
+        <tbody>${rows.map(s=>`<tr><td>${esc(s.full_name||"—")}</td><td class="n">${esc(s.roll_no)}</td>
+          <td>${esc(s.branch||"—")}</td><td class="n">${s.cgpa??"—"}</td><td class="n">${s.backlogs??0}</td>
+          <td>${s.has_login?'<span class="tag ok">active</span>':'<span class="tag warn">not claimed</span>'}</td></tr>`).join("")}</tbody>
+      </table></div>`:`<div class="empty"><div class="t">No students match</div><div>Try a different search.</div></div>`}
+    </div>`);
+    const sq=$("#sq");
+    sq.oninput=e=>{studentQuery=e.target.value;clearTimeout(sq._t);sq._t=setTimeout(StudentsView,260);};
+    if(studentQuery){sq.focus();sq.setSelectionRange(sq.value.length,sq.value.length);}
+    const c=$("#codes");if(c)c.onclick=async()=>{
+      try{const list=await api("/api/students/activation-codes");
+        if(!list.length)return toast("Every student has claimed their account");
+        const csv="roll_no,name,email,branch,code\n"+list.map(r=>
+          [r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+        a.download="activation-codes.csv";document.body.appendChild(a);a.click();a.remove();
+        toast(`${list.length} codes downloaded`);
+      }catch(e){toast(displayError(e));}};
+    const im=$("#import");if(im)im.onclick=importModal;
+  }catch(e){setView(errCard(e));}
+}
+function importModal(){
+  const body=`<p class="quiet">CSV with a header row. Required: <b>roll_no</b>, <b>email</b>.
+    Optional: full_name, branch, cgpa, backlogs, and any extra fields you have defined.</p>
+    <label for="f">Choose file</label><input id="f" type="file" accept=".csv,text/csv">`;
+  modal("Import roster",body,async wrap=>{
+    const f=wrap.querySelector("#f").files[0];
+    if(!f)throw new ApiError("Choose a CSV file.");
+    const fd=new FormData();fd.append("file",f);
+    const r=await api("/api/students/import",{method:"POST",body:fd});
+    toast(`${r.imported} imported · ${r.skipped_existing||0} already there${r.errors&&r.errors.length?` · ${r.errors.length} rows rejected`:""}`);
+    StudentsView();
+  },"Import");
+}
+
+/* ==========================================================================
+   Policy & buckets — central, set once
+   ========================================================================== */
+let policyTab="policy";
+async function PolicyView(){
+  Shell(spinner,"#/policy");
+  try{
+    const [policy,buckets]=await Promise.all([api("/api/policy"),api("/api/buckets")]);
+    BUCKETS=buckets;
+    const render=()=>{
+      const head=`<div class="head"><div><h1>Policy &amp; buckets</h1>
+        <div class="sub">Set once. Every drive follows this unless it was created with a customisation.</div></div></div>`;
+      let body="";
+      if(policyTab==="policy"){
+        const up=policy.upgrade||"none";
+        body=`
+        <div class="card"><div class="ch"><h2>Offer rules</h2>
+          <div class="rt"><button class="btn btn-p btn-s" id="savepol" type="button">Save policy</button></div></div>
+          <div class="cb">
+            <label for="p-max">How many offers may a student hold?</label>
+            <input id="p-max" type="number" min="1" max="10" value="${policy.max_offers||2}">
+            <label class="col" for="p-one" style="margin-top:14px">
+              <input type="checkbox" id="p-one" ${policy.one_offer?"checked":""}>
+              One offer only — a placed student sits for nothing further</label>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+              <h3>After a student has an offer, when may they sit again?</h3>
+              <p class="quiet" style="margin:4px 0 12px">This is the rule that decides who may attend the next drive.</p>
+              <label class="col" for="u-none"><input type="radio" name="up" id="u-none" value="none" ${up==="none"?"checked":""}>
+                No restriction — anyone may sit for anything</label>
+              <label class="col" for="u-mult"><input type="radio" name="up" id="u-mult" value="multiplier" ${up==="multiplier"?"checked":""}>
+                <b>Multiplier</b> — only drives paying at least N× their current best offer</label>
+              <label class="col" for="u-slab"><input type="radio" name="up" id="u-slab" value="higher_slab" ${up==="higher_slab"?"checked":""}>
+                <b>Higher band</b> — only drives in a bucket above the one they were placed in</label>
+              <label class="col" for="u-both"><input type="radio" name="up" id="u-both" value="both" ${up==="both"?"checked":""}>
+                <b>Both</b> — must be a higher band <i>and</i> meet the multiplier</label>
+
+              <label for="p-mult" style="margin-top:14px">Multiplier</label>
+              <input id="p-mult" type="number" min="1" step="0.1" value="${policy.multiplier||1.5}">
+              <p class="quiet" style="margin-top:6px">Example at 1.5×: a student placed at ₹8 LPA may only sit for drives paying ₹12 LPA or more.</p>
+            </div>
+          </div>
+          <div class="tf"><span>Currently: ${esc(describePolicy(policy))}</span></div>
+        </div>`;
+      }else{
+        body=`
+        <div class="card"><div class="ch"><h2>Buckets</h2>
+          <div class="rt"><button class="btn btn-s" id="addbucket" type="button">Add bucket</button></div></div>
+          <div class="list">${buckets.map(b=>`
+            <div class="row"><div class="bd">
+              <div class="t">${esc(b.label)} ${b.aliases&&b.aliases.length?`<span class="tag">also: ${esc(b.aliases.join(", "))}</span>`:""}</div>
+              <div class="d">${b.min_package?`from ${(b.min_package/100000).toFixed(1)} LPA`:"no minimum"}
+                ${b.max_package?` · up to ${(b.max_package/100000).toFixed(1)} LPA`:""}
+                · ${b.ignores_cap?"placed students may still sit":"counts toward the offer cap"}</div></div>
+              <div class="rt"><button class="btn btn-s" data-eb="${b.id}" type="button">Edit</button></div></div>`).join("")}
+          </div>
+          <div class="tf"><span>Every college names these differently. Aliases mean your staff see your words.</span></div>
+        </div>`;
+      }
+      setView(head+tabBar([["policy","Offer rules"],["buckets","Buckets",buckets.length]],policyTab,k=>{policyTab=k;render();})+body);
+
+      const sp=$("#savepol");
+      if(sp)sp.onclick=async()=>{
+        const up=(document.querySelector('input[name="up"]:checked')||{}).value||"none";
+        const payload={max_offers:Number($("#p-max").value)||null,one_offer:$("#p-one").checked,
+          upgrade:up,multiplier:Number($("#p-mult").value)||1};
+        sp.disabled=true;
+        try{const r=await api("/api/policy",{method:"PUT",body:JSON.stringify(payload)});
+          Object.assign(policy,r.policy||payload);toast("Policy saved");render();}
+        catch(e){toast(displayError(e));}finally{sp.disabled=false;}
+      };
+      $$("[data-eb]").forEach(btn=>btn.onclick=()=>{
+        const b=buckets.find(x=>String(x.id)===btn.dataset.eb);if(!b)return;
+        const body2=`<label for="b-label">Name</label><input id="b-label" value="${esc(b.label)}">
+          <label for="b-alias">Also called (comma separated)</label>
+          <input id="b-alias" value="${esc((b.aliases||[]).join(", "))}" placeholder="Super Dream, A+">
+          <label for="b-min">Minimum package (₹/year)</label><input id="b-min" type="number" value="${b.min_package||""}">
+          <label for="b-max">Maximum package (₹/year)</label><input id="b-max" type="number" value="${b.max_package||""}">
+          <label class="col" for="b-ign" style="margin-top:12px"><input type="checkbox" id="b-ign" ${b.ignores_cap?"checked":""}>
+            Placed students may still sit for this bucket</label>`;
+        modal(`Edit ${b.label}`,body2,async wrap=>{
+          await api(`/api/buckets/${b.id}`,{method:"PUT",body:JSON.stringify({
+            label:wrap.querySelector("#b-label").value.trim(),
+            aliases:wrap.querySelector("#b-alias").value.split(",").map(s=>s.trim()).filter(Boolean),
+            min_package:Number(wrap.querySelector("#b-min").value)||null,
+            max_package:Number(wrap.querySelector("#b-max").value)||null,
+            ignores_cap:wrap.querySelector("#b-ign").checked})});
+          toast("Bucket saved");PolicyView();});
+      });
+      const ab=$("#addbucket");
+      if(ab)ab.onclick=()=>modal("Add bucket",
+        `<label for="nb">Name</label><input id="nb" placeholder="e.g. Marquee">`,
+        async wrap=>{await api("/api/buckets",{method:"POST",
+          body:JSON.stringify({label:wrap.querySelector("#nb").value.trim()})});
+          toast("Bucket added");PolicyView();});
+    };
+    render();
+  }catch(e){setView(errCard(e));}
+}
+
+/* ==========================================================================
+   Planner — calendar, notes, reminders
+   ========================================================================== */
+let plannerTab="calendar";
+async function PlannerView(){
+  Shell(spinner,"#/planner");
+  const render=async()=>{
+    const head=`<div class="head"><div><h1>Planner</h1>
+      <div class="sub">Dates come from your drives automatically. Notes and reminders are yours.</div></div></div>`;
+    setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
+      k=>{plannerTab=k;render();})+spinner);
+    try{
+      if(plannerTab==="calendar"){
+        const cal=await api("/api/calendar");
+        const KIND={deadline:"Last date",test:"Test",visit:"Visit",note:"Note",reminder:"Your reminder"};
+        setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
+          k=>{plannerTab=k;render();})+
+          (cal.events.length?`<div class="card"><div class="ch"><h2>${esc(cal.month)}</h2></div><div class="list">
+            ${cal.events.map(e=>`<div class="row"><div class="bd"><div class="t">${esc(e.name)}</div>
+              <div class="d">${esc(KIND[e.kind]||e.kind)} · ${fmtDate(e.at)}</div></div></div>`).join("")}
+          </div></div>`:emptyCard("Nothing this month","Drive dates and test dates appear here as you add them.")));
+      }else if(plannerTab==="notes"){
+        const notes=await api("/api/notes");
+        setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
+          k=>{plannerTab=k;render();})+
+          `<div class="card"><div class="ch"><h2>Notes</h2>
+            <div class="rt"><button class="btn btn-p btn-s" id="addnote" type="button">New note</button></div></div>
+            ${notes.length?`<div class="list">${notes.map(n=>`<div class="row"><div class="bd">
+              <div class="t">${esc(n.title)}</div>
+              <div class="d">${esc(n.kind)} · ${fmtDate(n.note_date)}${n.company?" · "+esc(n.company):""}</div></div>
+              <div class="rt"><button class="btn btn-s" data-dn="${n.id}" type="button">Delete</button></div></div>`).join("")}</div>`
+            :`<div class="empty"><div class="t">No notes yet</div><div>Keep company contacts, room bookings and anything you'd otherwise write on paper.</div></div>`}
+          </div>`);
+        $("#addnote").onclick=()=>modal("New note",
+          `<label for="n-t">Title</label><input id="n-t">
+           <label for="n-d">Date</label><input id="n-d" type="date" value="${new Date().toISOString().slice(0,10)}">
+           <label for="n-k">Kind</label><select id="n-k"><option value="note">Note</option>
+             <option value="visit">Visit</option><option value="test">Test</option><option value="deadline">Deadline</option></select>
+           <label for="n-b">Details</label><textarea id="n-b"></textarea>`,
+          async wrap=>{
+            const title=wrap.querySelector("#n-t").value.trim();
+            if(!title)throw new ApiError("Give the note a title.");
+            await api("/api/notes",{method:"POST",body:JSON.stringify({title,
+              note_date:wrap.querySelector("#n-d").value,kind:wrap.querySelector("#n-k").value,
+              body:wrap.querySelector("#n-b").value})});
+            toast("Note added");render();});
+        $$("[data-dn]").forEach(b=>b.onclick=async()=>{
+          try{await api(`/api/notes/${b.dataset.dn}`,{method:"DELETE"});toast("Deleted");render();}
+          catch(e){toast(displayError(e));}});
+      }else{
+        const rem=await api("/api/reminders");
+        setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
+          k=>{plannerTab=k;render();})+
+          `<div class="card"><div class="ch"><h2>Reminders</h2><span class="tag">private to you</span>
+            <div class="rt"><button class="btn btn-p btn-s" id="addrem" type="button">New reminder</button></div></div>
+            ${rem.length?`<div class="list">${rem.map(r=>`<div class="row"><div class="bd">
+              <div class="t">${esc(r.title)}</div><div class="d">Due ${fmtDate(r.due_at)}${r.repeat_rule?" · repeats "+esc(r.repeat_rule):""}</div></div>
+              <div class="rt"><button class="btn btn-s" data-rd="${r.id}" type="button">Done</button>
+                <button class="btn btn-s" data-rx="${r.id}" type="button">Delete</button></div></div>`).join("")}</div>`
+            :`<div class="empty"><div class="t">No reminders</div><div>Nobody else can see these — not other staff, not CRs.</div></div>`}
+          </div>`);
+        $("#addrem").onclick=()=>modal("New reminder",
+          `<label for="r-t">Remind me to</label><input id="r-t" placeholder="e.g. Call Meridian HR about results">
+           <label for="r-d">When</label><input id="r-d" type="date" value="${new Date().toISOString().slice(0,10)}">
+           <label for="r-r">Repeat</label><select id="r-r"><option value="">Don't repeat</option>
+             <option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>`,
+          async wrap=>{
+            const title=wrap.querySelector("#r-t").value.trim();
+            if(!title)throw new ApiError("What should we remind you about?");
+            await api("/api/reminders",{method:"POST",body:JSON.stringify({title,
+              due_at:wrap.querySelector("#r-d").value+"T09:00:00Z",
+              repeat_rule:wrap.querySelector("#r-r").value||null})});
+            toast("Reminder set");render();});
+        $$("[data-rd]").forEach(b=>b.onclick=async()=>{
+          try{await api(`/api/reminders/${b.dataset.rd}`,{method:"PATCH",body:JSON.stringify({done:true})});
+            toast("Done");render();}catch(e){toast(displayError(e));}});
+        $$("[data-rx]").forEach(b=>b.onclick=async()=>{
+          try{await api(`/api/reminders/${b.dataset.rx}`,{method:"DELETE"});toast("Deleted");render();}
+          catch(e){toast(displayError(e));}});
+      }
+    }catch(e){setView(head+errCard(e));}
+  };
+  await render();
+}
+
+/* ==========================================================================
+   Analytics
+   ========================================================================== */
+let anTab="overview";
+async function AnalyticsView(){
+  Shell(spinner,"#/analytics");
+  try{
+    const a=await api("/api/analytics");
+    const render=()=>{
+      const head=`<div class="head"><div><h1>Analytics</h1>
+        <div class="sub">${a.overview.placed} placed · ${a.overview.placement_rate}% of students</div></div></div>`;
+      const bars=(rows,labelKey,valueKey,suffix)=>{
+        const max=Math.max(1,...rows.map(r=>Number(r[valueKey])||0));
+        return `<div class="bars">${rows.map(r=>`<div class="bar">
+          <div class="l">${esc(r[labelKey]??"—")}</div>
+          <div class="t"><div class="f" style="width:${Math.round((Number(r[valueKey])||0)/max*100)}%"></div></div>
+          <div class="v">${esc(String(r[valueKey]??0))}${suffix||""}</div></div>`).join("")}</div>`;
+      };
+      let body="";
+      if(anTab==="overview"){
+        body=`<div class="mx">
+          <div class="m"><div class="k">Placed</div><div class="v">${a.overview.placed}</div><div class="d">${a.overview.placement_rate}%</div></div>
+          <div class="m"><div class="k">Offers</div><div class="v">${a.overview.offers}</div><div class="d">${a.overview.applications} applications</div></div>
+          <div class="m"><div class="k">Median</div><div class="v">${(a.package.median/100000).toFixed(1)}</div><div class="d">LPA</div></div>
+          <div class="m"><div class="k">Highest</div><div class="v">${(a.package.max/100000).toFixed(1)}</div><div class="d">LPA</div></div>
+        </div>
+        <div class="card"><div class="ch"><h2>Offers by month</h2></div>${bars(a.timeline,"month","offers")}</div>
+        <div class="card"><div class="ch"><h2>Needs attention</h2></div><div class="list">
+          <div class="row"><div class="bd"><div class="t">${a.action_items.never_applied} students haven't applied anywhere</div>
+            <div class="d">Worth a reminder before the season ends</div></div></div>
+          <div class="row"><div class="bd"><div class="t">${a.action_items.no_resume} students have no resume on file</div>
+            <div class="d">They can't register for any drive</div></div></div>
+        </div></div>`;
+      }else if(anTab==="branch"){
+        body=`<div class="card"><div class="ch"><h2>Placed, by branch</h2></div>
+          <div class="tw"><table><thead><tr><th>Branch</th><th>Students</th><th>Placed</th><th>Rate</th><th>Average package</th></tr></thead>
+          <tbody>${a.branch_wise.map(b=>`<tr><td>${esc(b.branch)}</td><td class="n">${b.students}</td>
+            <td class="n">${b.placed}</td><td class="n">${b.students?Math.round(b.placed/b.students*100):0}%</td>
+            <td class="n">${b.avg_package?money(b.avg_package):"—"}</td></tr>`).join("")}</tbody></table></div></div>`;
+      }else if(anTab==="drives"){
+        body=`<div class="card"><div class="ch"><h2>Drive by drive</h2></div>
+          <div class="tw"><table><thead><tr><th>Company</th><th>Bucket</th><th>Package</th><th>Registered</th><th>In process</th><th>Placed</th></tr></thead>
+          <tbody>${a.drive_conversion.map(d=>`<tr><td>${esc(d.name)}</td><td>${esc(bucketLabel(d.category))}</td>
+            <td class="n">${money(d.package)}</td><td class="n">${d.registered}</td><td class="n">${d.in_process}</td>
+            <td class="n">${d.placed}</td></tr>`).join("")}</tbody></table></div></div>`;
+      }else{
+        const BANDS=["Under 5 LPA","5–10 LPA","10–15 LPA","Above 15 LPA"];
+        const dist=a.ctc_distribution.map(r=>({band:BANDS[r.bucket]||"Other",offers:r.offers}));
+        body=`<div class="card"><div class="ch"><h2>Offers by package band</h2></div>${bars(dist,"band","offers")}
+          <div class="tf"><span>Median ${(a.package.median/100000).toFixed(1)} LPA · average ${(a.package.avg/100000).toFixed(1)} LPA.
+            Quote the median — the average is pulled up by a few large offers.</span></div></div>
+        <div class="card"><div class="ch"><h2>Top offers</h2></div>
+          <div class="tw"><table><thead><tr><th>Student</th><th>Roll</th><th>Company</th><th>Package</th></tr></thead>
+          <tbody>${a.top_offers.map(t=>`<tr><td>${esc(t.full_name||"—")}</td><td class="n">${esc(t.roll_no)}</td>
+            <td>${esc(t.company)}</td><td class="n">${money(t.package)}</td></tr>`).join("")}</tbody></table></div></div>`;
+      }
+      setView(head+tabBar([["overview","Overview"],["branch","By branch"],["drives","Drive by drive"],["salary","Salary"]],
+        anTab,k=>{anTab=k;render();})+body);
+    };
+    render();
+  }catch(e){setView(errCard(e));}
+}
+
+/* ==========================================================================
+   Questions & edit requests
+   ========================================================================== */
+let inboxTab="questions";
+async function InboxView(){
+  Shell(spinner,"#/inbox");
+  const render=async()=>{
+    const tabs=[["questions","Questions"]];
+    if(isOfficer())tabs.push(["edits","Edit requests"]);
+    const head=`<div class="head"><div><h1>${isOfficer()?"Questions & requests":"Questions"}</h1>
+      <div class="sub">${isOfficer()?"CRs pass questions up to you":"Pass anything you can't answer to the placement officer"}</div></div></div>`;
+    setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+spinner);
+    try{
+      if(inboxTab==="questions"){
+        const qs=await api("/api/questions");
+        setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+
+          (qs.length?`<div class="card"><div class="list">${qs.map(q=>`
+            <div class="row"><div class="bd"><div class="t">${esc(q.title)}</div>
+              <div class="d">${esc(q.body||"")}${q.answer?`<br><b>Answer:</b> ${esc(q.answer)}`:""}</div></div>
+            <div class="rt"><span class="tag ${q.status==="answered"?"ok":q.status==="escalated"?"acc":"warn"}">${esc(q.status)}</span>
+              ${q.status!=="answered"?(isOfficer()
+                ?`<button class="btn btn-s" data-ans="${q.id}" type="button">Answer</button>`
+                :(q.status==="open"?`<button class="btn btn-s" data-esc="${q.id}" type="button">Pass up</button>`:""))
+              :""}</div></div>`).join("")}</div></div>`
+          :emptyCard("No questions","Students' questions appear here.")));
+        $$("[data-esc]").forEach(b=>b.onclick=async()=>{
+          try{await api(`/api/questions/${b.dataset.esc}`,{method:"PATCH",body:JSON.stringify({status:"escalated"})});
+            toast("Passed to the placement officer");render();}catch(e){toast(displayError(e));}});
+        $$("[data-ans]").forEach(b=>b.onclick=()=>modal("Answer this question",
+          `<label for="ans">Your answer</label><textarea id="ans" placeholder="Everyone in the college will see this."></textarea>`,
+          async wrap=>{const answer=wrap.querySelector("#ans").value.trim();
+            if(!answer)throw new ApiError("Write an answer.");
+            await api(`/api/questions/${b.dataset.ans}`,{method:"PATCH",
+              body:JSON.stringify({status:"answered",answer})});
+            toast("Answered");render();}));
+      }else{
+        const reqs=await api("/api/edit-requests");
+        setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+
+          (reqs.length?`<div class="card"><div class="list">${reqs.map(r=>`
+            <div class="row"><div class="bd"><div class="t">${esc(r.full_name||r.roll_no||"Student")} — ${esc(r.field)}</div>
+              <div class="d">${esc(String(r.current_value??"—"))} → <b>${esc(String(r.requested_value))}</b>${r.note?` · ${esc(r.note)}`:""}</div></div>
+            <div class="rt">${r.status==="pending"?`
+              <button class="btn btn-p btn-s" data-ok="${r.id}" type="button">Approve</button>
+              <button class="btn btn-s" data-no="${r.id}" type="button">Reject</button>`
+              :`<span class="tag ${r.status==="approved"?"ok":"bad"}">${esc(r.status)}</span>`}</div></div>`).join("")}</div></div>`
+          :emptyCard("Nothing pending","Corrections students ask for appear here.")));
+        const act=async(id,status)=>{
+          try{await api(`/api/edit-requests/${id}`,{method:"PATCH",body:JSON.stringify({status})});
+            toast(status==="approved"?"Approved and applied":"Rejected");render();}catch(e){toast(displayError(e));}};
+        $$("[data-ok]").forEach(b=>b.onclick=()=>act(b.dataset.ok,"approved"));
+        $$("[data-no]").forEach(b=>b.onclick=()=>act(b.dataset.no,"rejected"));
+      }
+    }catch(e){setView(head+errCard(e));}
+  };
+  await render();
+}
+
+/* ==========================================================================
+   Settings — notifications, CRs, Pro
+   ========================================================================== */
+let setTab="notify";
+async function SettingsView(){
+  Shell(spinner,"#/settings");
+  const render=async()=>{
+    const head=`<div class="head"><div><h1>Settings</h1>
+      <div class="sub">Announcement addresses, class representatives, and what your college has unlocked.</div></div></div>`;
+    const tabs=[["notify","Announcements"],["pro","Pro"]];
+    let body="";
+    if(setTab==="notify"){
+      body=`<div class="card"><div class="ch"><h2>Where student announcements go</h2></div>
+        <div class="list">
+          <div class="row"><div class="bd"><div class="t">Student group address</div>
+            <div class="d">Publishing a drive emails this group. It must be a group on your own college domain, and we send it a confirmation link before it can be used.</div></div>
+            <div class="rt"><button class="btn btn-s" disabled type="button">Change</button></div></div>
+          <div class="row off"><div class="bd"><div class="t">Personal details in group emails</div>
+            <div class="d">Group lists are wider than they look. Announcements never contain names, marks or contact details — those go to the student directly.</div></div>
+            <div class="rt"><span class="quiet">Never</span></div></div>
+        </div>
+        <div class="tf"><span>Setting and verifying the group address is done by your platform contact during onboarding.</span></div>
+      </div>`;
+    }else{
+      const PRO=[["pool_placements","Pool placements","Drives run jointly with other colleges in the network"],
+        ["test_sessions","Placement test sessions","Timed tests run with partner companies"],
+        ["cohorts","Cohorts","Small groups prepared with a partner company"],
+        ["events","Events","Talks and workshops, on your calendar"],
+        ["practice_tests","Weekly and monthly tests","Auto-scored practice sets"],
+        ["articles","Articles","Preparation material from the network"],
+        ["partner_sharing","Share student data with partners","Lets you ASK students — each one still decides individually"]];
+      body=`<div class="card"><div class="ch"><h2>Pro</h2><span class="tag pro">locked</span></div>
+        <div class="list">${PRO.map(([k,l,d])=>`<div class="row ${ENT[k]?"":"off"}">
+          <div class="bd"><div class="t"><span style="color:var(--pro)">*</span> ${esc(l)}</div><div class="d">${esc(d)}</div></div>
+          <div class="rt"><span class="tag ${ENT[k]?"ok":"pro"}">${ENT[k]?"on":"locked"}</span></div></div>`).join("")}</div>
+        <div class="cb" style="border-top:1px solid var(--line)">
+          <p class="quiet">Turning on a Pro feature never overrides a student's own choice. Sharing anything outside the college still needs that student to agree individually, and they can withdraw at any time.</p>
+        </div>
+      </div>`;
+    }
+    setView(head+tabBar(tabs,setTab,k=>{setTab=k;render();})+body);
+  };
+  await render();
+}
+
+/* ==========================================================================
+   CR — juniors
+   ========================================================================== */
+async function JuniorsView(){
+  Shell(`
+  <div class="head"><div><h1>Juniors</h1>
+    <div class="sub">Import your branch's non-final-year students and issue their sign-in codes.</div></div></div>
+  <div class="card"><div class="list">
+    <div class="row"><div class="bd"><div class="t">Import the branch list</div>
+      <div class="d">CSV with roll number, name, email and year. Existing students are matched on roll number, never duplicated.</div></div>
+      <div class="rt"><button class="btn btn-p btn-s" id="jimport" type="button">Choose file</button></div></div>
+    <div class="row"><div class="bd"><div class="t">Sign-in codes</div>
+      <div class="d">Each junior gets their own code, used once. A single shared code would be outside your branch within a day.</div></div>
+      <div class="rt"><button class="btn btn-s" id="jcodes" type="button">Download codes</button></div></div>
+    <div class="row"><div class="bd"><div class="t">What juniors can see</div>
+      <div class="d">Interview experiences written by seniors. No drives, no rosters, no other students' marks.</div></div></div>
+  </div></div>
+  <p class="quiet">Imports and code downloads are recorded against your name.</p>`,"#/juniors");
+  $("#jimport").onclick=importModal;
+  $("#jcodes").onclick=async()=>{
+    try{const list=await api("/api/students/activation-codes");
+      if(!list.length)return toast("Every student in your branch has claimed their account");
+      toast(`${list.length} unclaimed codes — use Students › Sign-in codes to download`);
+    }catch(e){toast(displayError(e));}};
+}
+
+/* ==========================================================================
+   STUDENT
+   ========================================================================== */
+async function StudentHome(){
+  Shell(spinner,"#/home");
+  try{
+    const [apps,profile]=await Promise.all([
+      api("/api/me/applications").catch(()=>[]),
+      api("/api/me/profile").catch(()=>({})),
+    ]);
+    const todo=[];
+    if(!profile.has_resume)todo.push(["Upload your resume","You can't apply to any drive without one","#/profile"]);
+    setView(`
+    <div class="head"><div><h1>Hello${profile.full_name?", "+esc(profile.full_name.split(" ")[0]):""}</h1>
+      <div class="sub">${esc(profile.roll_no||"")}${profile.branch?" · "+esc(profile.branch):""}${profile.cgpa!=null?" · CGPA "+profile.cgpa:""}</div></div></div>
+    ${todo.length?`<div class="card"><div class="ch"><h2>To do</h2><span class="tag warn">${todo.length}</span></div>
+      <div class="list">${todo.map(([t,d,h])=>`<div class="row"><div class="bd"><div class="t">${esc(t)}</div>
+        <div class="d">${esc(d)}</div></div><div class="rt"><a class="btn btn-p btn-s" href="${h}">Open</a></div></div>`).join("")}</div></div>`:""}
+    <div class="mx">
+      <div class="m"><div class="k">Applied</div><div class="v">${apps.length}</div><div class="d">drives</div></div>
+      <div class="m"><div class="k">In process</div><div class="v">${apps.filter(a=>a.status==="active").length}</div><div class="d">still running</div></div>
+      <div class="m"><div class="k">Offers</div><div class="v">${apps.filter(a=>a.status==="placed").length}</div><div class="d">—</div></div>
+    </div>
+    ${apps.length?`<div class="card"><div class="ch"><h2>Your applications</h2></div><div class="list">
+      ${apps.map(a=>`<div class="row"><div class="bd"><div class="t">${esc(a.company)}</div>
+        <div class="d">${money(a.package)} · ${esc(RL[a.current_round]||a.current_round)}</div></div>
+        <div class="rt"><span class="tag ${a.status==="placed"?"ok":a.status==="rejected"?"bad":""}">${esc(a.status)}</span></div></div>`).join("")}
+    </div></div>`:emptyCard("You haven't applied anywhere yet","Open Drives to see what you're eligible for.")}`);
+  }catch(e){setView(errCard(e));}
+}
+
+let myQuery="",myBucket="",showBlocked=false;
+async function StudentDrives(){
+  Shell(spinner,"#/drives");
+  try{
+    if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
+    const all=await api("/api/me/drives");
+    const open=all.filter(d=>d.status===1);
+    const q=myQuery.trim().toLowerCase();
+    const match=d=>(!q||`${d.name} ${bucketLabel(d.category)}`.toLowerCase().includes(q))
+      &&(!myBucket||d.category===myBucket);
+    const eligible=open.filter(d=>d.eligible&&match(d));
+    const blocked=open.filter(d=>!d.eligible&&match(d));
+    setView(`
+    <div class="head"><div><h1>Drives</h1>
+      <div class="sub">${eligible.length} you can apply to, of ${open.length} open</div></div></div>
+    <input class="search" id="mq" type="search" placeholder="Search by company name" value="${esc(myQuery)}">
+    <div class="frow">
+      <select id="mb" style="width:auto"><option value="">All buckets</option>
+        ${BUCKETS.map(b=>`<option value="${esc(b.key)}" ${myBucket===b.key?"selected":""}>${esc(b.label)}</option>`).join("")}</select>
+      <label class="col" for="sb" style="margin-left:auto"><input type="checkbox" id="sb" ${showBlocked?"checked":""}>
+        Also show drives I can't apply to (${blocked.length})</label>
+    </div>
+    <div class="card"><div class="ch"><h2>You can apply</h2><span class="tag ok">${eligible.length}</span></div>
+      ${eligible.length?`<div class="list">${eligible.map(d=>`
+        <div class="row"><div class="bd"><div class="t">${esc(d.name)} <span class="tag">${esc(bucketLabel(d.category))}</span></div>
+          <div class="d">${money(d.package)}</div></div>
+        <div class="rt"><button class="btn btn-p btn-s" data-reg="${d.id}" type="button">Apply</button></div></div>`).join("")}</div>`
+      :`<div class="empty"><div class="t">Nothing open for you right now</div>
+        <div>${blocked.length?"Tick the box above to see the drives you're not eligible for, and why.":"Check back when the next drive is published."}</div></div>`}
+    </div>
+    ${showBlocked&&blocked.length?`<div class="card"><div class="ch"><h2>You can't apply</h2><span class="tag">${blocked.length}</span></div>
+      <div class="list">${blocked.map(d=>`<div class="row"><div class="bd">
+        <div class="t">${esc(d.name)} <span class="tag">${esc(bucketLabel(d.category))}</span></div>
+        <div class="d">${money(d.package)}</div>
+        ${d.reasons&&d.reasons.length?`<div class="why"><div class="h">Why not</div>
+          <ul>${d.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div>`:""}</div>
+        <div class="rt"><button class="btn btn-s" disabled type="button">Apply</button></div></div>`).join("")}</div>
+    </div>`:""}`);
+    const mq=$("#mq");
+    mq.oninput=e=>{myQuery=e.target.value;clearTimeout(mq._t);mq._t=setTimeout(StudentDrives,220);};
+    if(myQuery){mq.focus();mq.setSelectionRange(mq.value.length,mq.value.length);}
+    $("#mb").onchange=e=>{myBucket=e.target.value;StudentDrives();};
+    $("#sb").onchange=e=>{showBlocked=e.target.checked;StudentDrives();};
+    $$("[data-reg]").forEach(b=>b.onclick=async()=>{
+      b.disabled=true;
+      try{const r=await api(`/api/me/register/${b.dataset.reg}`,{method:"POST"});
+        toast(`Applied to ${r.drive}`);StudentDrives();}
+      catch(e){toast(displayError(e));b.disabled=false;}});
+  }catch(e){setView(errCard(e));}
+}
+
+async function ExperiencesView(){
+  Shell(spinner,"#/experiences");
+  try{
+    const rows=await api("/api/me/feedback");
+    const D=["","Easy","Easy","Medium","Hard","Very hard"];
+    setView(`
+    <div class="head"><div><h1>Interview experiences</h1>
+      <div class="sub">${rows.length} written by students who sat these drives</div></div>
+      ${uiRole()==="student"?`<div class="rt"><button class="btn btn-p" id="addxp" type="button">Write yours</button></div>`:""}</div>
+    ${rows.length?`<div class="card"><div class="list">${rows.map(f=>`
+      <div class="row"><div class="bd">
+        <div class="t">${esc(f.company)}${f.role?" · "+esc(f.role):""}
+          ${f.difficulty?`<span class="tag ${f.difficulty>=4?"bad":f.difficulty===3?"warn":"ok"}">${esc(D[f.difficulty]||"")}</span>`:""}</div>
+        <div class="d">${f.rounds?esc(f.rounds)+" — ":""}${esc(f.topics||"")}${f.tips?"<br>"+esc(f.tips):""}</div>
+      </div></div>`).join("")}</div></div>`
+    :emptyCard("Nothing here yet","Once seniors write about their interviews, it shows up here.")}`);
+    const add=$("#addxp");
+    if(add)add.onclick=async()=>{
+      let apps=[];
+      try{apps=await api("/api/me/applications");}catch{}
+      const placed=apps.filter(a=>a.status==="placed");
+      if(!placed.length)return toast("You can write an experience once an offer is recorded");
+      const body=`<label for="x-co">Which company?</label>
+        <select id="x-co">${placed.map(a=>`<option value="${a.id}" data-c="${esc(a.company)}">${esc(a.company)}</option>`).join("")}</select>
+        <label for="x-role">Role</label><input id="x-role" placeholder="e.g. Software Engineer">
+        <label for="x-rounds">Rounds you went through</label><input id="x-rounds" placeholder="OA + 2 tech + HR">
+        <label for="x-diff">How hard was it?</label>
+        <select id="x-diff"><option value="1">1 — easy</option><option value="2">2</option>
+          <option value="3" selected>3 — medium</option><option value="4">4</option><option value="5">5 — very hard</option></select>
+        <label for="x-topics">Topics they asked</label><input id="x-topics" placeholder="DP, graphs, SQL">
+        <label for="x-tips">Advice for juniors</label><textarea id="x-tips"></textarea>`;
+      modal("Write your interview experience",body,async wrap=>{
+        const sel=wrap.querySelector("#x-co");
+        const app=apps.find(a=>String(a.id)===sel.value);
+        await api("/api/me/feedback",{method:"POST",body:JSON.stringify({
+          company_id:app?app.company_id:null,
+          role:wrap.querySelector("#x-role").value.trim(),
+          rounds:wrap.querySelector("#x-rounds").value.trim(),
+          difficulty:Number(wrap.querySelector("#x-diff").value),
+          topics:wrap.querySelector("#x-topics").value.trim(),
+          tips:wrap.querySelector("#x-tips").value.trim()})});
+        toast("Thank you — juniors will see this");ExperiencesView();},"Post");
+    };
+  }catch(e){setView(errCard(e));}
 }
 
 async function ProfileView(){
-  Shell(`<div class="page-h"><h1>Profile</h1></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">Your record <button class="btn btn-ghost btn-sm" onclick="$('#er').style.display='block'">Request an edit</button></div>
-        <div id="pv"></div>
-        <div id="er" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:6px">
-          <label>Field</label><select id="er-f"><option value="cgpa">CGPA</option><option value="backlogs">Backlogs</option><option value="full_name">Name</option><option value="email">Email</option><option value="attr:tenth_pct">10th %</option><option value="attr:twelfth_pct">12th %</option><option value="attr:gap_years">Gap years</option></select>
-          <label>Correct value</label><input id="er-v" placeholder="e.g. 8.9">
-          <label>Why? (optional)</label><input id="er-n" placeholder="Sem 6 results updated">
-          <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="sendEdit()">Submit request</button>
-        </div>
-        <div id="reqs" style="margin-top:14px"></div>
-      </div>
-      <div class="panel"><div class="panel-t">Resume</div>
-        <div id="rz-meta" class="note" style="margin:0 0 12px"></div>
-        <div class="drop" id="rz-drop"><b>Drop your resume PDF</b>or click to choose (max 2 MB)
-          <input type="file" id="rz-file" accept="application/pdf" style="display:none"></div>
-      </div>
-    </div>`,"#/profile");
+  Shell(spinner,"#/profile");
   try{
-    const d=await api("/api/me/profile");const p=d.profile;
-    const attrs=p.attributes||{};
-    $("#pv").innerHTML=[["Roll no",p.roll_no],["Name",p.full_name],["Email",p.email],["Branch",p.branch],["CGPA",p.cgpa??"—"],["Backlogs",p.backlogs],
-      ...Object.entries(attrs).map(([k,v])=>[k.replace(/_/g," "),v])]
-      .map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("");
-    $("#reqs").innerHTML=d.edit_requests.length?`<div class="panel-t" style="font-size:13px">Your requests</div>`+
-      d.edit_requests.map(r=>`<div class="kv"><span class="k">${esc(r.field)} → ${esc(r.requested_value)}</span>
-        <span class="chip ${r.status==='approved'?'ok':r.status==='rejected'?'bad':'warn'}">${r.status}</span></div>`).join(""):"";
-    const rz=await api("/api/me/resume");
-    $("#rz-meta").textContent=rz?`On file: ${rz.filename} · ${rz.size_kb} KB · updated ${new Date(rz.updated_at).toLocaleDateString()}`:"No resume uploaded yet — required before registering for any drive.";
-    const drop=$("#rz-drop"),file=$("#rz-file");
-    drop.onclick=()=>file.click();
-    ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
-    ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
-    drop.addEventListener("drop",e=>{if(e.dataTransfer.files[0])upResume(e.dataTransfer.files[0]);});
-    file.onchange=()=>{if(file.files[0])upResume(file.files[0]);};
-  }catch(e){toast(e.message);}
-}
-async function upResume(f){const fd=new FormData();fd.append("file",f);
-  try{const r=await api("/api/me/resume",{method:"POST",body:fd});toast(`Resume saved (${r.size_kb} KB)`);ProfileView();}catch(e){toast(e.message);}}
-async function sendEdit(){
-  try{await api("/api/me/edit-request",{method:"POST",body:JSON.stringify({field:$("#er-f").value,requested_value:$("#er-v").value,note:$("#er-n").value})});
-    toast("Request sent to your placement cell");ProfileView();}catch(e){toast(e.message);}}
-
-async function QAStudent(){
-  Shell(`<div class="page-h"><h1>Q&amp;A</h1></div>
-    <div class="panel"><div class="panel-t">Ask your placement cell</div>
-      <input id="q-t" placeholder="One-line question (e.g. When is the Zentrix OA?)">
-      <textarea id="q-b" placeholder="Any details (optional)" style="margin-top:10px"></textarea>
-      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="postQ()">Post question</button>
+    const p=await api("/api/me/profile");
+    const c=await api("/api/me/consent").catch(()=>({}));
+    const consentOn=!!(c.consent_recruiter_share??c.consent??c.enabled??false);
+    setView(`
+    <div class="head"><div><h1>My details</h1>
+      <div class="sub">${esc(p.full_name||"")} · ${esc(p.roll_no||"")}${p.branch?" · "+esc(p.branch):""}</div></div></div>
+    <div class="card"><div class="list">
+      <div class="row"><div class="bd"><div class="t">CGPA</div><div class="d">${p.cgpa??"—"} · from your college records</div></div>
+        <div class="rt"><button class="btn btn-s" data-fix="cgpa" type="button">Ask to correct</button></div></div>
+      <div class="row"><div class="bd"><div class="t">Backlogs</div><div class="d">${p.backlogs??0}</div></div>
+        <div class="rt"><button class="btn btn-s" data-fix="backlogs" type="button">Ask to correct</button></div></div>
+      <div class="row"><div class="bd"><div class="t">Resume</div>
+        <div class="d">${p.has_resume?"On file":"Not uploaded — you can't apply to any drive without one"}</div></div>
+        <div class="rt"><button class="btn ${p.has_resume?"":"btn-p"} btn-s" id="upres" type="button">${p.has_resume?"Replace":"Upload"}</button></div></div>
+    </div></div>
+    <div class="card"><div class="ch"><h2>Who can see you</h2></div><div class="list">
+      <div class="row"><div class="bd"><div class="t">Your college</div>
+        <div class="d">Always sees your marks, applications and placement status</div></div>
+        <div class="rt"><span class="quiet">Always</span></div></div>
+      <div class="row"><div class="bd"><div class="t">Companies at your college's drives</div>
+        <div class="d">See your resume and details for drives you applied to</div></div>
+        <div class="rt"><span class="quiet">On applying</span></div></div>
+      <div class="row"><div class="bd"><div class="t">Anyone outside your college</div>
+        <div class="d">Off by default. If you turn this on you can turn it off again at any time.</div></div>
+        <div class="rt"><label class="sw" for="cs"><input type="checkbox" id="cs" ${consentOn?"checked":""}><i></i></label></div></div>
     </div>
-    <div class="panel"><div class="panel-t">Questions &amp; answers</div><div id="qs"></div></div>`,"#/qa");
-  loadQs();
+    <div class="cb" style="border-top:1px solid var(--line)">
+      <p class="quiet">Your college turning on a Pro feature does not turn this on. Only you can.</p></div>
+    </div>`);
+    $$("[data-fix]").forEach(b=>b.onclick=()=>modal(`Ask to correct your ${b.dataset.fix}`,
+      `<label for="rv">What should it be?</label><input id="rv">
+       <label for="rn">Why (optional)</label><input id="rn" placeholder="e.g. semester results updated">`,
+      async wrap=>{const requested_value=wrap.querySelector("#rv").value.trim();
+        if(!requested_value)throw new ApiError("Enter the correct value.");
+        await api("/api/me/edit-request",{method:"POST",body:JSON.stringify({
+          field:b.dataset.fix,requested_value,note:wrap.querySelector("#rn").value.trim()})});
+        toast("Sent to your placement officer");},"Send"));
+    $("#upres").onclick=()=>{
+      const input=document.createElement("input");
+      input.type="file";input.accept="application/pdf";
+      input.onchange=async()=>{
+        const f=input.files[0];if(!f)return;
+        if(f.type!=="application/pdf")return toast("Upload a PDF");
+        const fd=new FormData();fd.append("file",f);
+        try{await api("/api/me/resume",{method:"POST",body:fd});toast("Resume uploaded");ProfileView();}
+        catch(e){toast(displayError(e));}};
+      input.click();};
+    $("#cs").onchange=async e=>{
+      try{await api("/api/me/consent",{method:"POST",body:JSON.stringify({consent:e.target.checked})});
+        toast(e.target.checked?"Recruiters outside your college can now find you":"Turned off");}
+      catch(err){toast(displayError(err));e.target.checked=!e.target.checked;}};
+  }catch(e){setView(errCard(e));}
 }
-async function loadQs(){try{const qs=await api("/api/me/questions");
-  $("#qs").innerHTML=qs.map(q=>`<div class="qa-item"><div class="t">${esc(q.title)}
-    <span class="chip ${q.status==='answered'?'ok':q.status==='escalated'?'warn':'gray'}" style="margin-left:8px">${q.status}</span></div>
-    ${q.body?`<div class="b">${esc(q.body)}</div>`:""}
-    ${q.answer?`<div class="ans"><b>PO:</b> ${esc(q.answer)}</div>`:""}</div>`).join("")
-  ||`<div class="empty"><b>Nothing yet</b>Ask the first question.</div>`;}catch(e){toast(e.message);}}
-async function postQ(){try{await api("/api/me/questions",{method:"POST",body:JSON.stringify({title:$("#q-t").value,body:$("#q-b").value})});
-  $("#q-t").value="";$("#q-b").value="";toast("Posted — your CR will see it");loadQs();}catch(e){toast(e.message);}}
 
-async function FeedbackView(){
-  Shell(`<div class="page-h"><h1>Interview experiences</h1></div>
-    <div class="panel" id="fb-form-p"><div class="panel-t">Share yours (opens after you're placed)</div>
-      <div class="grid2">
-        <div><label>Role</label><input id="fb-role" placeholder="SDE Intern">
-          <label>CTC (₹/yr)</label><input id="fb-ctc" type="number" placeholder="1100000">
-          <label>Rounds</label><input id="fb-rounds" placeholder="OA + 2 tech + HR"></div>
-        <div><label>Difficulty (1–5)</label><input id="fb-diff" type="number" min="1" max="5" value="3">
-          <label>Topics asked</label><input id="fb-topics" placeholder="DP, SQL joins, OS basics">
-          <label>Tips for juniors</label><textarea id="fb-tips" style="min-height:58px"></textarea></div>
-      </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="sendFb()">Submit experience</button>
-    </div>
-    <div class="panel"><div class="panel-t">From your seniors</div><div id="fb-list"></div></div>`,"#/feedback");
-  try{const fb=await api("/api/me/feedback");
-    $("#fb-list").innerHTML=fb.map(f=>`<div class="qa-item">
-      <div class="t">${esc(f.company)} — ${esc(f.role||"")} <span class="chip mut" style="margin-left:8px">${money(f.ctc)}</span>
-        ${f.difficulty?`<span class="chip ${f.difficulty>=4?'bad':f.difficulty>=3?'warn':'ok'}" style="margin-left:6px">difficulty ${f.difficulty}/5</span>`:""}</div>
-      <div class="b">${esc(f.rounds||"")} · ${esc(f.topics||"")}</div>
-      ${f.tips?`<div class="ans">${esc(f.tips)}</div>`:""}</div>`).join("")
-    ||`<div class="empty"><b>No experiences yet</b>Placed seniors' write-ups appear here.</div>`;}catch(e){toast(e.message);}
-}
-async function sendFb(){try{await api("/api/me/feedback",{method:"POST",body:JSON.stringify({role:$("#fb-role").value,ctc:+$("#fb-ctc").value||null,rounds:$("#fb-rounds").value,difficulty:+$("#fb-diff").value||null,topics:$("#fb-topics").value,tips:$("#fb-tips").value})});
-  toast("Thank you — juniors will love this");FeedbackView();}catch(e){toast(e.message);}}
-
-/* ====================== admin views ====================== */
-async function Dashboard(){
-  const isCR=AUTH.role==="sub_admin";
-  Shell(`<div class="page-h"><h1>${isCR?"My branch":"Dashboard"}</h1><span class="crumb" id="cn"></span></div>
-    <div class="stat-row" id="st"></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">Pipeline · active</div><div id="fn"></div></div>
-      ${isCR?'<div class="panel"><div class="panel-t">Your CR role</div><p class="note" style="font-size:13.5px;margin:0">Keep your branch pipeline current and escalate student questions that need a placement-officer decision.</p><a class="btn btn-ghost btn-sm" style="margin-top:14px" href="#/qa-admin">Open questions →</a></div>':'<div class="panel"><div class="panel-t">Upcoming <a class="btn btn-ghost btn-sm" href="#/notes">calendar →</a></div><div id="up"></div></div>'}
-    </div>`,"#/dashboard");
+async function QAView(){
+  Shell(spinner,"#/qa");
   try{
-    const me=await api("/api/auth/me");$("#cn").textContent=me.college?.name||"";
-    const d=await api("/api/dashboard/stats");const t=d.totals;
-    const labels=d.scope==="branch"?["Students in my branch","College drives","Branch applications","Placed in my branch"]:["Students","Drives","Applications","Placed"];
-    $("#st").innerHTML=[[labels[0],t.students],[labels[1],t.companies],[labels[2],t.applications],[labels[3],`${t.placed} <small>${d.placement_rate}%</small>`]]
-      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
-    const mx=Math.max(...d.funnel.map(f=>f.count),1);
-    $("#fn").innerHTML=d.funnel.map(f=>`<div class="bar"><span class="lbl">${RL[f.round]}</span><div class="track"><div class="fill" style="width:0" data-w="${(f.count/mx*100).toFixed(0)}"></div></div><span class="n">${f.count}</span></div>`).join("");
-    requestAnimationFrame(()=>document.querySelectorAll("#fn .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
-    if(!isCR){
-      const notes=await api("/api/admin/notes");
-      const today=new Date().toISOString().slice(0,10);
-      const up=notes.filter(n=>n.note_date>=today).slice(0,5);
-      $("#up").innerHTML=up.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
-        <div><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
-        <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}</div></div>`).join("")
-        ||`<div class="empty"><b>Nothing scheduled</b>Add visits and deadlines in Notes.</div>`;
-    }
-  }catch(e){toast(e.message);}
+    const qs=await api("/api/me/questions").catch(()=>[]);
+    setView(`
+    <div class="head"><div><h1>Ask a question</h1>
+      <div class="sub">Your class representative sees it first, and passes it on if needed.</div></div>
+      <div class="rt"><button class="btn btn-p" id="ask" type="button">Ask</button></div></div>
+    ${qs.length?`<div class="card"><div class="list">${qs.map(q=>`
+      <div class="row"><div class="bd"><div class="t">${esc(q.title)}</div>
+        <div class="d">${esc(q.body||"")}${q.answer?`<br><b>Answer:</b> ${esc(q.answer)}`:""}</div></div>
+      <div class="rt"><span class="tag ${q.status==="answered"?"ok":"warn"}">${esc(q.status)}</span></div></div>`).join("")}</div></div>`
+    :emptyCard("No questions yet","Ask anything about eligibility, dates or the process.")}`);
+    $("#ask").onclick=()=>modal("Ask a question",
+      `<label for="q-t">Question</label><input id="q-t" placeholder="e.g. Has the Nova last date moved?">
+       <label for="q-b">Any detail</label><textarea id="q-b"></textarea>`,
+      async wrap=>{const title=wrap.querySelector("#q-t").value.trim();
+        if(!title)throw new ApiError("Type your question.");
+        await api("/api/me/questions",{method:"POST",body:JSON.stringify({title,
+          body:wrap.querySelector("#q-b").value.trim()})});
+        toast("Sent");QAView();},"Send");
+  }catch(e){setView(errCard(e));}
 }
 
-async function StudentsView(){
-  const canManage=isPlacementOfficer();
-  Shell(`<div class="page-h"><h1>${canManage?"Students":"Students in my branch"}</h1>${canManage?'<a class="btn btn-primary btn-sm" href="#/import">Import roster</a>':''}</div>
-    <div class="panel"><div class="toolbar">
-      <input type="search" id="q" placeholder="Search roll, name, email…">
-      ${canManage?'<button class="btn btn-ghost btn-sm" id="codes">Unclaimed activation codes</button>':''}</div>
-      <table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Login</th></tr></thead><tbody id="rows"></tbody></table></div>`,"#/students");
-  const load=async q=>{try{const rows=await api("/api/admin/students"+(q?"?q="+encodeURIComponent(q):""));
-    $("#rows").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
-      <td><span class="chip gray">${esc(r.branch)}</span></td><td class="mono">${r.cgpa??"—"}</td>
-      <td>${r.has_login?'<span class="chip ok">active</span>':'<span class="chip warn">not claimed</span>'}</td></tr>`).join("")
-    ||`<tr><td colspan="5"><div class="empty"><b>No students</b>Import your roster CSV.</div></td></tr>`;}catch(e){toast(e.message);}};
-  load();let deb;$("#q").addEventListener("input",e=>{clearTimeout(deb);deb=setTimeout(()=>load(e.target.value.trim()),280);});
-  if(canManage)$("#codes").onclick=async()=>{try{const rows=await api("/api/admin/students/activation-codes");
-    if(!rows.length)return toast("Everyone has claimed already.");
-    const csv="roll_no,full_name,email,branch,activation_code\n"+rows.map(r=>[r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="activation-codes.csv";a.click();URL.revokeObjectURL(a.href);}catch(e){toast(e.message);}};
+function PremiumView(){
+  const items=[["resume_review","Resume review","A reviewer marks up your resume within three days"],
+    ["mentorship","1:1 mentorship","Thirty minutes with someone working in your target role"],
+    ["pool_apply","Pool campus apply","Apply to drives at other colleges in the network"],
+    ["coding_practice","Coding test practice","Timed sets on the topics companies actually ask"]];
+  Shell(`
+  <div class="head"><div><h1>Premium</h1>
+    <div class="sub">Extra help if you want it. Everything else stays free.</div></div></div>
+  <div class="card"><div class="list">
+    ${items.map(([k,l,d])=>`<div class="row ${ENT[k]?"":"off"}">
+      <div class="bd"><div class="t"><span style="color:var(--pro)">*</span> ${esc(l)}</div><div class="d">${esc(d)}</div></div>
+      <div class="rt"><span class="tag ${ENT[k]?"ok":"pro"}">${ENT[k]?"available":"locked"}</span></div></div>`).join("")}
+  </div>
+  <div class="cb" style="border-top:1px solid var(--line)">
+    <p class="quiet">Premium never changes who can apply to a drive, and never moves anyone up a shortlist.
+    Eligibility is your college's rules and nothing else.</p></div>
+  </div>`,"#/premium");
 }
 
-function ImportView(){
-  Shell(`<div class="page-h"><h1>Import roster</h1><span class="crumb">CSV · UTF-8</span></div>
-    <div class="panel"><div class="drop" id="drop"><b>Drop your roster CSV</b>or click to choose
-      <input type="file" id="file" accept=".csv" style="display:none"></div>
-    <p class="note">Required: <code>roll_no</code> <code>email</code> <code>full_name</code> <code>branch_code</code> · optional: <code>cgpa</code> <code>backlogs</code> <code>activation_code</code> + any custom attribute columns you've defined. Existing rolls are skipped.</p>
-    <div id="out"></div></div>`,"#/import");
-  const drop=$("#drop"),file=$("#file");drop.onclick=()=>file.click();
-  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
-  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
-  drop.addEventListener("drop",e=>{if(e.dataTransfer.files[0])up(e.dataTransfer.files[0]);});
-  file.onchange=()=>{if(file.files[0])up(file.files[0]);};
-  async function up(f){$("#out").innerHTML=`<p class="note">Uploading ${esc(f.name)}…</p>`;
-    const fd=new FormData();fd.append("file",f);
-    try{const r=await api("/api/admin/students/import",{method:"POST",body:fd});
-      let h=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px">
-        <span class="chip ok">${r.imported} imported</span><span class="chip warn">${r.skipped_existing} existed</span>
-        <span class="chip ${r.errors.length?'bad':'ok'}">${r.errors.length} errors</span></div>`;
-      if(r.created_branches.length)h+=`<p class="note">New branches: ${r.created_branches.map(esc).join(", ")}</p>`;
-      if(r.errors.length)h+=`<ul class="reasons">${r.errors.map(e=>`<li>Row ${e.row}: ${esc(e.error)}</li>`).join("")}</ul>`;
-      if(r.activation_codes.length)h+=`<button class="btn btn-primary btn-sm" id="dl" style="margin-top:12px">Download ${r.activation_codes.length} activation codes</button>`;
-      $("#out").innerHTML=h;
-      if(r.activation_codes.length)$("#dl").onclick=()=>{const csv="roll_no,full_name,email,activation_code\n"+r.activation_codes.map(c=>[c.roll_no,c.full_name,c.email,c.activation_code].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-        const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="activation-codes.csv";a.click();URL.revokeObjectURL(a.href);};
-      toast(`Imported ${r.imported}`);}catch(e){$("#out").innerHTML=`<div class="err show">${esc(e.message)}</div>`;}}
-}
-
-async function DrivesAdmin(){
-  const canManage=isPlacementOfficer();
-  Shell(`<div class="page-h"><h1>${canManage?"Drives":"Branch drive pipeline"}</h1>${canManage?'<button class="btn btn-primary btn-sm" onclick="$(\'#new\').style.display=\'block\'">+ New drive</button>':''}</div>
-    ${canManage?`<div class="panel" id="new" style="display:none"><div class="panel-t">New drive</div>
-      <div class="grid2"><div><label>Company name</label><input id="nd-n">
-        <label>Category</label><select id="nd-c"><option>tier1</option><option>tier2</option><option>core</option><option>dream</option><option>internship</option></select></div>
-      <div><label>Package (₹/yr)</label><input id="nd-p" type="number" placeholder="1200000">
-        <label>Deadline</label><input id="nd-d" type="datetime-local"></div></div>
-      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="createDrive()">Create (as draft)</button></div>`:''}
-    <div id="list"></div>`,"#/drives-admin");
-  loadDrivesAdmin();
-}
-async function loadDrivesAdmin(){
-  try{const cs=await api("/api/companies");
-    const canManage=isPlacementOfficer();
-    $("#list").innerHTML=cs.map(c=>`<div class="drive-card">
-      <div class="top"><div><span class="nm">${esc(c.name)}</span>
-        <span class="chip ${c.category==='tier1'?'warn':'mut'}" style="margin-left:8px">${esc(c.category||'—')}</span>
-        <span class="chip ${c.status===1?'ok':'gray'}" style="margin-left:6px">${c.status===1?'open':c.status===2?'closed':'draft'}</span></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pkg">${money(c.package)}</span>
-          ${canManage?`<button class="btn btn-ghost btn-sm" onclick="toggleDrive(${c.id},${c.status===1?2:1})">${c.status===1?'Close':'Open'}</button>
-          <button class="btn btn-ghost btn-sm" onclick="RuleBuilder(${c.id},'${esc(c.name)}')">Eligibility</button>`:''}
-          <button class="btn btn-ghost btn-sm" onclick="Registrants(${c.id},'${esc(c.name)}')">Pipeline (${c.registered})</button></div></div></div>`).join("")
-    ||`<div class="panel"><div class="empty"><b>No drives</b>Create your first one.</div></div>`;}catch(e){toast(e.message);}
-}
-async function createDrive(){try{await api("/api/admin/companies",{method:"POST",body:JSON.stringify({name:$("#nd-n").value,category:$("#nd-c").value,package:+$("#nd-p").value||null,deadline:$("#nd-d").value||null})});
-  toast("Drive created as draft — set eligibility, then open it");DrivesAdmin();}catch(e){toast(e.message);}}
-async function toggleDrive(id,st){try{await api("/api/admin/companies/"+id,{method:"PATCH",body:JSON.stringify({status:st})});loadDrivesAdmin();}catch(e){toast(e.message);}}
-
-let RB={rows:[],orRows:[],attrs:[]};
-async function RuleBuilder(cid,name){
-  Shell(`<div class="page-h"><h1>Eligibility · ${esc(name)}</h1><a class="btn btn-ghost btn-sm" href="#/drives-admin">← Drives</a></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">Every student must match ALL of these</div>
-        <div id="rb-rows"></div>
-        <button class="btn btn-ghost btn-sm" onclick="rbAdd(false)">+ condition</button>
-        <div class="or-block"><div class="t">…AND at least ONE of these (optional)</div>
-          <div id="rb-or"></div>
-          <button class="btn btn-ghost btn-sm" onclick="rbAdd(true)">+ alternative</button></div>
-        <div style="display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="rbSave(${cid})">Save rules</button>
-          <button class="btn btn-mint btn-sm" onclick="rbPreview(${cid})">Preview eligible count</button>
-          <span class="chip mut" id="rb-prev" style="display:none"></span></div>
-      </div>
-      <div class="panel"><div class="panel-t">Plain English</div><div id="rb-eng" class="note" style="font-size:13.5px;margin:0"></div>
-        <div class="panel-t" style="margin-top:18px">Add a custom attribute</div>
-        <div style="display:flex;gap:8px"><input id="at-k" placeholder="key e.g. twelfth_pct"><select id="at-t" style="max-width:110px"><option>number</option><option>text</option><option>boolean</option></select></div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addAttr(${cid},'${esc(name)}')">Add to registry</button>
-        <p class="note">Attributes come from roster import columns or approved edit requests. Rules save as data — no code, no deploys.</p></div>
-    </div>`,"#/drives-admin");
-  RB={rows:[],orRows:[],attrs:await api("/api/admin/attributes")};
-  try{ // preload existing rules so editing never starts blank
-    const t=await api(`/api/admin/companies/${cid}/rules`);
-    if(t&&t.all){for(const n of t.all){
-      if(n.field)RB.rows.push({field:n.field,op:n.op,value:Array.isArray(n.value)?n.value.join(","):String(n.value)});
-      else if(n.any)for(const l of n.any)if(l.field)RB.orRows.push({field:l.field,op:l.op,value:Array.isArray(l.value)?l.value.join(","):String(l.value)});}}
-  }catch{}
-  for(const r of [...RB.rows,...RB.orRows])   // unknown fields render as themselves
-    if(!RB.attrs.find(a=>a.key===r.field))RB.attrs.push({key:r.field,label:r.field.replace(/_/g," "),data_type:"number"});
-  rbRender();
-}
-function rbOpts(sel){return RB.attrs.map(a=>`<option value="${a.key}" ${a.key===sel?'selected':''}>${esc(a.label)}</option>`).join("");}
-function rbRowHTML(list,i,r){return `<div class="rule-row">
-  <select onchange="RB.${list}[${i}].field=this.value;rbEng()">${rbOpts(r.field)}</select>
-  <select onchange="RB.${list}[${i}].op=this.value;rbEng()">${[">=","<=","==","!=","in","not_in"].map(o=>`<option ${o===r.op?'selected':''}>${o}</option>`).join("")}</select>
-  <input value="${esc(r.value)}" placeholder="value (comma-sep for in)" oninput="RB.${list}[${i}].value=this.value;rbEng()">
-  <button class="x" onclick="RB.${list}.splice(${i},1);rbRender()">✕</button></div>`;}
-function rbRender(){
-  $("#rb-rows").innerHTML=RB.rows.map((r,i)=>rbRowHTML("rows",i,r)).join("")||`<p class="note">No conditions yet — everyone qualifies.</p>`;
-  $("#rb-or").innerHTML=RB.orRows.map((r,i)=>rbRowHTML("orRows",i,r)).join("")||`<p class="note" style="margin:0">None.</p>`;
-  rbEng();
-}
-function rbAdd(or){(or?RB.orRows:RB.rows).push({field:RB.attrs[0].key,op:">=",value:""});rbRender();}
-function rbEng(){
-  const say=r=>{const a=RB.attrs.find(x=>x.key===r.field);return `${a?a.label:r.field} ${r.op} ${r.value||"…"}`;};
-  let t=RB.rows.map(say).join(", AND ")||"anyone";
-  if(RB.orRows.length)t+=`, AND at least one of: ${RB.orRows.map(say).join(" / ")}`;
-  $("#rb-eng").textContent=t;
-}
-function rbTree(){
-  const leaf=r=>{const a=RB.attrs.find(x=>x.key===r.field);const num=a&&a.data_type==="number";
-    let v=r.value;if(["in","not_in"].includes(r.op))v=v.split(",").map(s=>s.trim()).filter(Boolean);
-    else if(num)v=parseFloat(v);else if(a&&a.data_type==="boolean")v=v==="true";
-    return {field:r.field,op:r.op,value:v,label:a?a.label:r.field};};
-  const all=RB.rows.map(leaf);
-  if(RB.orRows.length)all.push({any:RB.orRows.map(leaf)});
-  return all.length?{all}:null;
-}
-async function rbSave(cid){try{await api(`/api/admin/companies/${cid}/rules`,{method:"PUT",body:JSON.stringify({rules:rbTree()})});toast("Rules saved");}catch(e){toast(e.message);}}
-async function rbPreview(cid){try{await rbSave(cid);const p=await api(`/api/admin/companies/${cid}/eligibility-preview`);
-  const el=$("#rb-prev");el.style.display="inline-block";el.textContent=`${p.eligible} of ${p.total} students eligible`;}catch(e){toast(e.message);}}
-async function addAttr(cid,name){try{const k=$("#at-k").value;await api("/api/admin/attributes",{method:"POST",body:JSON.stringify({key:k,label:k.replace(/_/g," "),data_type:$("#at-t").value})});
-  toast("Attribute added");RuleBuilder(cid,name);}catch(e){toast(e.message);}}
-
-async function Registrants(cid,name){
-  Shell(`<div class="page-h"><h1>Pipeline · ${esc(name)}</h1><a class="btn btn-ghost btn-sm" href="#/drives-admin">← Drives</a></div>
-    <div class="panel"><table><thead><tr><th>Roll</th><th>Name</th><th>Branch</th><th>CGPA</th><th>Resume</th><th>Round</th><th>Status</th></tr></thead><tbody id="regs"></tbody></table></div>`,"#/drives-admin");
-  try{const rows=await api(`/api/admin/companies/${cid}/registrations`);
-    const canManage=isPlacementOfficer();
-    $("#regs").innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.roll_no)}</td><td>${esc(r.full_name)}</td>
-      <td><span class="chip gray">${esc(r.branch)}</span></td><td class="mono">${r.cgpa??"—"}</td>
-      <td>${r.has_resume?'<span class="chip ok">✓</span>':'<span class="chip bad">✕</span>'}</td>
-      <td><select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'current_round',this.value,${cid},'${esc(name)}')">
-        ${ROUNDS.map(x=>`<option value="${x}" ${x===r.current_round?'selected':''}>${RL[x]}</option>`).join("")}</select></td>
-      <td>${canManage?`<select class="btn-sm" style="padding:5px" onchange="advApp(${r.id},'status',this.value,${cid},'${esc(name)}')">
-        ${["active","placed","rejected","withdrawn"].map(x=>`<option ${x===r.status?'selected':''}>${x}</option>`).join("")}</select>`:`<span class="chip ${r.status==='placed'?'ok':r.status==='rejected'?'bad':'mut'}">${esc(r.status)}</span>`}</td></tr>`).join("")
-    ||`<tr><td colspan="7"><div class="empty"><b>No registrations yet</b></div></td></tr>`;}catch(e){toast(e.message);}
-}
-async function advApp(id,k,v,cid,name){try{await api("/api/admin/applications/"+id,{method:"PATCH",body:JSON.stringify({[k]:v})});
-  toast(v==="placed"?"Placed — offer recorded 🎉":"Updated");if(v==="placed")Registrants(cid,name);}catch(e){toast(e.message);}}
-
-async function PolicyView(){
-  Shell(`<div class="page-h"><h1>Placement policy</h1></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">College-wide rules</div>
-        <div class="switch"><input type="checkbox" id="p-one"><label style="margin:0">One offer per student (strict)</label></div>
-        <label>Maximum offers per student (blank = no cap)</label><input id="p-max" type="number" min="1">
-        <label>Upgrade rule after an offer</label>
-        <select id="p-up"><option value="none">None — anyone can keep sitting</option>
-          <option value="multiplier">Multiplier — must pay ≥ N× current best</option>
-          <option value="higher_slab">Salary slabs — higher slab only</option>
-          <option value="both">Both (strictest)</option></select>
-        <label>Multiplier (e.g. 1.5)</label><input id="p-mult" type="number" step="0.1" value="1.5">
-        <label>Slabs (LPA caps, comma-sep; last is open) e.g. 5,10</label><input id="p-slabs" placeholder="5,10">
-        <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="savePolicy()">Save policy</button>
-      </div>
-      <div class="panel"><div class="panel-t">How it plays out</div>
-        <p class="note" style="font-size:13.5px;margin:0">A student placed at ₹6 LPA:<br><br>
-        · <b>Multiplier 1.5×</b> → can only register for drives paying ≥ ₹9 LPA.<br>
-        · <b>Slabs 5,10</b> → they're in slab 2 (5–10), so only slab 3 (&gt;10 LPA) drives.<br>
-        · <b>One offer</b> → they're done for the season.<br><br>
-        Blocked students see the exact rule in their Drives page — no more "why can't I register" queues at your desk.</p></div>
-    </div>`,"#/policy");
-  try{const p=await api("/api/admin/policy");
-    $("#p-one").checked=!!p.one_offer;$("#p-max").value=p.max_offers||"";
-    $("#p-up").value=p.upgrade||"none";$("#p-mult").value=p.multiplier||1.5;
-    $("#p-slabs").value=(p.slabs||[]).filter(s=>s.max_lpa).map(s=>s.max_lpa).join(",");}catch(e){toast(e.message);}
-}
-async function savePolicy(){
-  const caps=$("#p-slabs").value.split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
-  const slabs=caps.map((c,i)=>({name:"S"+(i+1),max_lpa:c}));if(caps.length)slabs.push({name:"S"+(caps.length+1)});
-  try{await api("/api/admin/policy",{method:"PUT",body:JSON.stringify({one_offer:$("#p-one").checked,
-    max_offers:+$("#p-max").value||null,upgrade:$("#p-up").value,multiplier:+$("#p-mult").value||null,slabs})});
-    toast("Policy saved — applies to every drive instantly");}catch(e){toast(e.message);}}
-
-async function NotesView(){
-  Shell(`<div class="page-h"><h1>Notes &amp; calendar</h1></div>
-    <div class="grid2">
-      <div class="panel"><div class="panel-t">Schedule</div><div id="cal"></div></div>
-      <div class="panel"><div class="panel-t">Add</div>
-        <label>Date</label><input id="n-d" type="date">
-        <label>Type</label><select id="n-k"><option>visit</option><option>test</option><option>deadline</option><option>note</option></select>
-        <label>Title</label><input id="n-t" placeholder="Zentrix pre-placement talk">
-        <label>Details</label><textarea id="n-b" style="min-height:60px"></textarea>
-        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="addNote()">Add to calendar</button></div>
-    </div>`,"#/notes");
-  loadNotes();
-}
-async function loadNotes(){try{const ns=await api("/api/admin/notes");
-  $("#cal").innerHTML=ns.map(n=>`<div class="cal-day"><span class="d">${n.note_date}</span>
-    <div style="flex:1"><span class="chip ${n.kind==='deadline'?'bad':n.kind==='test'?'warn':n.kind==='visit'?'mut':'gray'}">${n.kind}</span>
-      <b style="margin-left:8px">${esc(n.title)}</b>${n.company?` · ${esc(n.company)}`:""}
-      ${n.body?`<div class="note" style="margin-top:3px">${esc(n.body)}</div>`:""}</div>
-    <button style="border:0;background:transparent;color:var(--rose);cursor:pointer;font-size:15px" onclick="delNote(${n.id})">✕</button></div>`).join("")
-  ||`<div class="empty"><b>Empty calendar</b>Add company visits, tests, deadlines.</div>`;}catch(e){toast(e.message);}}
-async function addNote(){try{await api("/api/admin/notes",{method:"POST",body:JSON.stringify({note_date:$("#n-d").value,kind:$("#n-k").value,title:$("#n-t").value,body:$("#n-b").value})});
-  toast("Added");loadNotes();}catch(e){toast(e.message);}}
-async function delNote(id){try{await api("/api/admin/notes/"+id,{method:"DELETE"});loadNotes();}catch(e){toast(e.message);}}
-
-async function AnalyticsView(){
-  Shell(`<div class="page-h"><h1>Analytics</h1><button class="btn btn-ghost btn-sm" id="ex">Export report CSV</button></div>
-    <div class="stat-row" id="st"></div>
-    <div class="stat-row" id="st2" style="grid-template-columns:repeat(3,1fr)"></div>
-    <div class="grid2">
-      <div>
-        <div class="panel"><div class="panel-t">Branch performance</div>
-          <table><thead><tr><th>Branch</th><th>Placed</th><th>Rate</th><th>Avg pkg</th></tr></thead><tbody id="bw"></tbody></table></div>
-        <div class="panel"><div class="panel-t">Drive conversion</div>
-          <table><thead><tr><th>Company</th><th>Reg</th><th>Active</th><th>Placed</th><th>Conv</th></tr></thead><tbody id="dc"></tbody></table></div>
-      </div>
-      <div>
-        <div class="panel"><div class="panel-t">CTC distribution (offers)</div><div id="ctc"></div>
-          <div class="panel-t" style="margin-top:18px">Offers by month</div><div id="tl"></div></div>
-        <div class="panel"><div class="panel-t">Live round funnel</div><div id="rf"></div>
-          <div class="panel-t" style="margin-top:18px">Top offers</div><div id="top"></div></div>
-      </div>
-    </div>`,"#/analytics");
-  try{const a=await api("/api/admin/analytics");const o=a.overview;
-    $("#st").innerHTML=[["Placement rate",o.placement_rate+"%"],["Placed / students",o.placed+" / "+o.students],
-      ["Avg package",money(a.package.avg)],["Highest",money(a.package.max)]]
-      .map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:22px">${v}</div></div>`).join("");
-    const ai=a.action_items, cg=a.cgpa_insight;
-    $("#st2").innerHTML=[
-      [`Never applied`,ai.never_applied,ai.never_applied>0?"var(--rose)":"var(--mint)"],
-      [`No resume yet`,ai.no_resume,ai.no_resume>0?"var(--amber)":"var(--mint)"],
-      [`CGPA placed vs rest`,cg.placed_avg+" vs "+cg.unplaced_avg,"var(--acc)"]]
-      .map(([k,v,c])=>`<div class="stat"><div class="k">${k}</div><div class="v" style="font-size:22px;color:${c}">${v}</div></div>`).join("");
-    $("#bw").innerHTML=a.branch_wise.map(b=>{const r=b.students?Math.round(100*b.placed/b.students):0;
-      return `<tr><td><span class="chip gray">${esc(b.branch)}</span></td><td class="mono">${b.placed}/${b.students}</td>
-      <td><div class="track" style="height:8px;width:70px;display:inline-block;background:var(--line);border-radius:5px;overflow:hidden;vertical-align:middle"><div class="fill mint" style="width:${r}%;height:100%"></div></div> <span class="mono" style="font-size:12px">${r}%</span></td>
-      <td class="mono">${b.avg_package?money(b.avg_package):"—"}</td></tr>`;}).join("");
-    $("#dc").innerHTML=a.drive_conversion.map(d=>{const cv=d.registered?Math.round(100*d.placed/d.registered):0;
-      return `<tr><td>${esc(d.name)} <span class="chip ${d.status===1?'ok':'gray'}" style="font-size:10px">${d.status===1?'open':d.status===2?'closed':'draft'}</span></td>
-      <td class="mono">${d.registered}</td><td class="mono">${d.in_process}</td><td class="mono">${d.placed}</td>
-      <td class="mono" style="color:${cv>0?'var(--mint)':'var(--mut)'}">${cv}%</td></tr>`;}).join("");
-    const BUCK=["< 5 LPA","5–10 LPA","10–15 LPA","15+ LPA"];
-    const dist=[0,1,2,3].map(i=>({label:BUCK[i],n:(a.ctc_distribution.find(x=>x.bucket===i)||{}).offers||0}));
-    const dmx=Math.max(...dist.map(d=>d.n),1);
-    $("#ctc").innerHTML=dist.map(d=>`<div class="bar"><span class="lbl">${d.label}</span>
-      <div class="track"><div class="fill" style="width:${(d.n/dmx*100).toFixed(0)}%"></div></div><span class="n">${d.n}</span></div>`).join("");
-    const tmx=Math.max(...a.timeline.map(t=>t.offers),1);
-    $("#tl").innerHTML=a.timeline.map(t=>`<div class="bar"><span class="lbl">${esc(t.month)}</span>
-      <div class="track"><div class="fill mint" style="width:${(t.offers/tmx*100).toFixed(0)}%"></div></div><span class="n">${t.offers}</span></div>`).join("")||`<p class="note">No offers yet.</p>`;
-    const rmx=Math.max(...a.round_funnel.map(r=>r.count),1);
-    $("#rf").innerHTML=ROUNDS.filter(x=>a.round_funnel.find(r=>r.round===x)).map(x=>{const n=a.round_funnel.find(r=>r.round===x).count;
-      return `<div class="bar"><span class="lbl">${RL[x]}</span><div class="track"><div class="fill" style="width:${(n/rmx*100).toFixed(0)}%"></div></div><span class="n">${n}</span></div>`;}).join("")||`<p class="note">No active applications.</p>`;
-    $("#top").innerHTML=a.top_offers.slice(0,5).map(t=>`<div class="kv"><span class="k">${esc(t.full_name)} · ${esc(t.company)}</span><span class="v mono">${money(t.package)}</span></div>`).join("")||`<p class="note">—</p>`;
-    $("#ex").onclick=()=>{let csv="section,key,value\n";
-      csv+=Object.entries(o).map(([k,v])=>`overview,${k},${v}`).join("\n")+"\n";
-      csv+=a.branch_wise.map(b=>`branch,${b.branch},${b.placed}/${b.students} avg=${b.avg_package}`).join("\n")+"\n";
-      csv+=a.drive_conversion.map(d=>`drive,${d.name.replace(/,/g,";")},reg=${d.registered} placed=${d.placed}`).join("\n");
-      const el=document.createElement("a");el.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));el.download="placement-report.csv";el.click();};
-  }catch(e){toast(e.message);}
-}
-
-async function QAAdmin(){
-  const isCR=AUTH.role==="sub_admin";
-  Shell(`<div class="page-h"><h1>${isCR?"Questions to escalate":"Q&A inbox"}</h1><span class="crumb">CRs escalate · PO answers</span></div>
-    ${isCR?'':'<div class="panel" id="alerts"></div>'}<div class="panel" id="qs"></div>`,"#/qa-admin");
-  try{const [qs,notifications]=await Promise.all([api("/api/admin/questions"),isCR?Promise.resolve([]):api("/api/admin/notifications")]);
-    if(!isCR){const unread=notifications.filter(n=>!n.read_at);
-      $("#alerts").innerHTML=unread.length?`<div class="panel-t">Escalations needing attention <span class="chip warn">${unread.length}</span></div>`+
-        unread.map(n=>`<div class="qa-item"><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body||"")}</div><div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="markRead(${n.id})">Mark read</button></div></div>`).join(""):
-        `<div class="empty"><b>No escalations waiting</b>Questions escalated by CRs appear here.</div>`;}
-    $("#qs").innerHTML=qs.map(q=>`<div class="qa-item">
-      <div class="t">${esc(q.title)} <span class="chip gray" style="margin-left:6px">${esc(q.branch||"")} · ${esc(q.roll_no||"")}</span>
-        <span class="chip ${q.status==='answered'?'ok':q.status==='escalated'?'warn':'gray'}" style="margin-left:6px">${q.status}</span></div>
-      ${q.body?`<div class="b">${esc(q.body)}</div>`:""}
-      ${q.answer?`<div class="ans">${esc(q.answer)}</div>`:`
-        <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
-          ${isCR&&q.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="modQ(${q.id},'escalate')">Escalate to PO</button>`:""}
-          ${!isCR?`<input id="ans-${q.id}" placeholder="Answer…" style="max-width:340px">
-          <button class="btn btn-primary btn-sm" onclick="modQ(${q.id},'answer')">Answer &amp; publish</button>`:""}</div>`}
-    </div>`).join("")||`<div class="empty"><b>Inbox zero</b></div>`;}catch(e){toast(e.message);}
-}
-async function modQ(id,action){const body={action};if(action==="answer")body.answer=$("#ans-"+id).value;
-  try{await api("/api/admin/questions/"+id,{method:"PATCH",body:JSON.stringify(body)});toast(action==="answer"?"Published to all students":"Escalated");QAAdmin();}catch(e){toast(e.message);}}
-async function markRead(id){try{await api("/api/admin/notifications/"+id+"/read",{method:"PATCH"});QAAdmin();}catch(e){toast(e.message);}}
-
-async function EditsAdmin(){
-  Shell(`<div class="page-h"><h1>Edit requests</h1></div><div class="panel" id="er2"></div>`,"#/edits");
-  try{const rs=await api("/api/admin/edit-requests");
-    $("#er2").innerHTML=rs.map(r=>`<div class="qa-item">
-      <div class="t">${esc(r.full_name)} <span class="chip gray">${esc(r.roll_no)}</span>
-        <span class="chip ${r.status==='approved'?'ok':r.status==='rejected'?'bad':'warn'}" style="margin-left:6px">${r.status}</span></div>
-      <div class="b">${esc(r.field)}: <s>${esc(r.current_value||"—")}</s> → <b>${esc(r.requested_value)}</b>${r.note?` · "${esc(r.note)}"`:""}</div>
-      ${r.status==='pending'?`<div style="display:flex;gap:8px;margin-top:9px">
-        <button class="btn btn-mint btn-sm" onclick="decideEdit(${r.id},'approved')">Approve &amp; apply</button>
-        <button class="btn btn-ghost btn-sm" onclick="decideEdit(${r.id},'rejected')">Reject</button></div>`:""}
-    </div>`).join("")||`<div class="empty"><b>No requests</b></div>`;}catch(e){toast(e.message);}
-}
-async function decideEdit(id,d){try{await api("/api/admin/edit-requests/"+id,{method:"PATCH",body:JSON.stringify({decision:d})});
-  toast(d==="approved"?"Applied to the roster":"Rejected");EditsAdmin();}catch(e){toast(e.message);}}
-
-/* ============================ router ============================ */
-const ROUTES={"#/login":LoginView,"#/dashboard":Dashboard,"#/students":StudentsView,"#/import":ImportView,
-  "#/drives-admin":DrivesAdmin,"#/policy":PolicyView,"#/notes":NotesView,"#/analytics":AnalyticsView,
-  "#/qa-admin":QAAdmin,"#/edits":EditsAdmin,
-  "#/home":StudentHome,"#/drives":DrivesStudent,"#/profile":ProfileView,"#/qa":QAStudent,"#/feedback":FeedbackView};
-const STAFF_ONLY=["#/dashboard","#/students","#/import","#/drives-admin","#/policy","#/notes","#/analytics","#/qa-admin","#/edits"];
-const PLACEMENT_OFFICER_ONLY=["#/import","#/policy","#/notes","#/analytics","#/edits"];
-function enterApp(){location.hash=isStaff()?"#/dashboard":"#/home";render();}
-function render(){
+/* ==========================================================================
+   Router
+   ========================================================================== */
+const ROUTES={
+  "#/login":LoginView,
+  "#/today":TodayView,"#/drives":()=>isStaff()?DrivesView():StudentDrives(),
+  "#/students":StudentsView,"#/policy":PolicyView,"#/planner":PlannerView,
+  "#/analytics":AnalyticsView,"#/inbox":InboxView,"#/settings":SettingsView,
+  "#/juniors":JuniorsView,
+  "#/home":StudentHome,"#/experiences":ExperiencesView,"#/profile":ProfileView,
+  "#/qa":QAView,"#/premium":PremiumView,
+};
+function route(){
   let h=location.hash||"";
-  if(!AUTH)h="#/login";
-  else if(!ROUTES[h]||h==="#/login")h=isStaff()?"#/dashboard":"#/home";
-  else if(!isStaff()&&STAFF_ONLY.includes(h))h="#/home";
-  else if(AUTH.role==="sub_admin"&&PLACEMENT_OFFICER_ONLY.includes(h))h="#/dashboard";
-  if(location.hash!==h){location.hash=h;return;}
+  if(!AUTH){LoginView();return;}
+  const drive=/^#\/drive\/(\d+)/.exec(h);
+  if(drive&&isStaff()){
+    const tabParam=/tab=([a-z]+)/.exec(h);
+    if(tabParam)driveTab=tabParam[1];
+    DriveView(drive[1]);return;
+  }
+  h=h.split("?")[0];
+  const allowed=NAV[uiRole()].flatMap(([,items])=>items.map(i=>i[0]));
+  if(!ROUTES[h]||!allowed.includes(h))h=allowed[0];
   ROUTES[h]();
 }
-window.addEventListener("hashchange",render);
-(async()=>{try{CFG=await api("/api/auth/config");}catch{}render();})();
+async function enterApp(){
+  applyRole();
+  if(AUTH&&["student","alumni"].includes(AUTH.role)){
+    try{const ctx=await api("/api/me/context");AUTH.is_final_year=ctx.is_final_year;}
+    catch{AUTH.is_final_year=true;}
+  }
+  applyRole();
+  try{ENT=await api("/api/entitlements");}catch{ENT={};}
+  try{BUCKETS=await api("/api/buckets");}catch{BUCKETS=[];}
+  if(!location.hash||location.hash==="#/login"){
+    location.hash=NAV[uiRole()][0][1][0][0];
+  }
+  route();
+}
+window.addEventListener("hashchange",route);
+(async function boot(){
+  applyTheme(localStorage.getItem(THEME_KEY)||"dark");
+  try{CFG=await api("/api/auth/config");}catch{}
+  if(AUTH){
+    try{
+      const me=await api("/api/auth/me");
+      AUTH={...AUTH,...me};localStorage.setItem("cohort_auth",JSON.stringify(AUTH));
+      await enterApp();
+    }catch(e){
+      if(e instanceof ApiError&&e.status===401){/* signOut already ran */}
+      else{applyRole();route();}
+    }
+  }else{LoginView();}
+})();
 </script>
 </body>
 </html>
