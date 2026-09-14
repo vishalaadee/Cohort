@@ -1,11 +1,38 @@
 # Cohort — release bundle
 
-Drop these folders into the repo root. Three files **replace** existing ones
-(`backend/app/main.py`, `backend/app/permissions.py`, `frontend/app/app.html`);
-everything else is new.
+> ## ⚠ Read `docs/DEPLOY_EC2.md` section 1 first
+>
+> Commit `36b46e5` on `develop` deleted 41 files — the whole backend app,
+> `backend/Dockerfile`, `db-init/`, the tests, migrations `0002`–`0007`, and
+> `docs/INFRA.md`. **Do not deploy from `develop` as it stands** — the backend
+> image cannot even build. Everything is recoverable from git history and the
+> restore is one command, in section 1 of that doc.
 
-**Deploying to EC2? Go straight to [`docs/DEPLOY_EC2.md`](docs/DEPLOY_EC2.md)** —
-every command in order, from your Mac's terminal.
+**This zip is an OVERLAY.** It contains only the files that change. Unzip it
+into the repo, then `git add` the specific paths below — `git add -A` after
+unzipping is what recorded those deletions last time.
+
+```bash
+unzip -o ~/Downloads/cohort-release.zip -d .
+git add backend/app/main.py backend/app/permissions.py \
+        backend/app/routers/placement.py backend/app/routers/portal.py \
+        frontend/app/app.html migrations/ docs/ scripts/verify-deploy.sql
+git add -u          # the restored files
+```
+
+Four files **replace** existing ones (`main.py`, `permissions.py`, `portal.py`,
+`app.html`); everything else is new. `portal.py` ships with the draft-drive
+leak already fixed, so there is no manual edit step.
+
+### Verified, not assumed
+
+This release was run against a real PostgreSQL 16: your schema, your role
+grants, your seed, all eight migrations through your own migration runner,
+then every new SQL statement executed as `app_user` with RLS active. Tenant
+isolation, CR branch scoping, student self-scoping, reminder privacy, the
+F-6 round_progress fix and send idempotency were all confirmed with a second
+college present. `scripts/verify-deploy.sql` reruns those checks against your
+database after you deploy — nine checks, all should print PASS.
 
 Written against the real code on `develop` (commit `4e3f67c` plus your local vision-docs commit), September 2026. Where a document makes a claim about the codebase, it was verified by reading the file.
 

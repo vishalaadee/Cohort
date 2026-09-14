@@ -485,7 +485,7 @@ async function TodayView(){
       [reminders,drives,notifs]=await Promise.all([
         api("/api/reminders").catch(()=>[]),
         api("/api/companies").catch(()=>[]),
-        api("/api/notifications").catch(()=>[]),
+        api("/api/admin/notifications").catch(()=>[]),
       ]);
     }
     const t=stats.totals||{};
@@ -626,7 +626,7 @@ async function addDriveModal(){
     const payload={name,category:wrap.querySelector("#m-bucket").value,
       package:Number(wrap.querySelector("#m-pkg").value)||null,
       deadline:wrap.querySelector("#m-dl").value||null};
-    const r=await api("/api/companies",{method:"POST",body:JSON.stringify(payload)});
+    const r=await api("/api/admin/companies",{method:"POST",body:JSON.stringify(payload)});
     const role=wrap.querySelector("#m-role").value.trim();
     if(role){try{await api(`/api/companies/${r.id}/details`,{method:"PATCH",
       body:JSON.stringify({role_title:role})});}catch{/* role is optional */}}
@@ -660,11 +660,11 @@ async function DriveView(id){
     const draw=async()=>{
       let body="",wire=null;
       try{
-        if(driveTab==="students"){const r=await api(`/api/companies/${id}/registrations`);
+        if(driveTab==="students"){const r=await api(`/api/admin/companies/${id}/registrations`);
           body=studentsTab(r);wire=()=>wireStudents(id);}
-        else if(driveTab==="details"){const r=await api(`/api/companies/${id}/registrations`).catch(()=>[]);
+        else if(driveTab==="details"){const r=await api(`/api/admin/companies/${id}/registrations`).catch(()=>[]);
           body=detailsTab(d,r);wire=()=>wireDetails(id,d,draw);}
-        else if(driveTab==="rules"){const p=await api("/api/policy").catch(()=>({}));
+        else if(driveTab==="rules"){const p=await api("/api/admin/policy").catch(()=>({}));
           body=rulesTab(d,p);wire=()=>wireRules(id,d,draw);}
         else if(driveTab==="downloads"){const m=await api("/api/export/columns");
           body=downloadsTab(m);wire=()=>wireDownloads(id,m,draw);}
@@ -782,7 +782,7 @@ function wireDetails(id,d,redraw){
       `<option value="${esc(x.key)}" ${x.key===d.category?"selected":""}>${esc(x.label)}</option>`).join("")}</select>
      <p class="quiet" style="margin-top:8px">The bucket decides which offer-cap rules apply from your central policy.</p>`,
     async w=>{const category=w.querySelector("#nb").value;
-      await api(`/api/companies/${id}`,{method:"PATCH",body:JSON.stringify({category})});
+      await api(`/api/admin/companies/${id}`,{method:"PATCH",body:JSON.stringify({category})});
       d.category=category;toast("Bucket changed");redraw();});
   const r=$("#ed-role");
   if(r)r.onclick=()=>modal("Role",`<label for="nr">Role</label><input id="nr" value="${esc(d.role_title||"")}">`,
@@ -840,7 +840,7 @@ function wireRules(id,d,redraw){
   const tree=d.eligibility_rules||{};
   const list=Array.isArray(tree.all)?tree.all.slice():[];
   const persist=async()=>{
-    await api(`/api/companies/${id}/rules`,{method:"PUT",
+    await api(`/api/admin/companies/${id}/rules`,{method:"PUT",
       body:JSON.stringify({eligibility_rules:list.length?{all:list}:{}})});
     d.eligibility_rules=list.length?{all:list}:{};
   };
@@ -877,7 +877,7 @@ function wireRules(id,d,redraw){
   };
   const pv=$("#preview");
   if(pv)pv.onclick=async()=>{
-    try{const r=await api(`/api/companies/${id}/eligibility-preview`);
+    try{const r=await api(`/api/admin/companies/${id}/eligibility-preview`);
       toast(`${r.eligible} of ${r.total} students qualify`);}catch(e){toast(displayError(e));}};
   const sc=$("#setcustom");
   if(sc)sc.onclick=()=>modal("Customise offer rules for this drive",
@@ -989,7 +989,7 @@ let studentQuery="";
 async function StudentsView(){
   Shell(spinner,"#/students");
   try{
-    const rows=await api("/api/students"+(studentQuery?`?q=${encodeURIComponent(studentQuery)}`:""));
+    const rows=await api("/api/admin/students"+(studentQuery?`?q=${encodeURIComponent(studentQuery)}`:""));
     setView(`
     <div class="head"><div><h1>Students</h1>
       <div class="sub">${rows.length} shown${rows.length>=500?" (first 500 — search to narrow)":""}</div></div>
@@ -1010,7 +1010,7 @@ async function StudentsView(){
     sq.oninput=e=>{studentQuery=e.target.value;clearTimeout(sq._t);sq._t=setTimeout(StudentsView,260);};
     if(studentQuery){sq.focus();sq.setSelectionRange(sq.value.length,sq.value.length);}
     const c=$("#codes");if(c)c.onclick=async()=>{
-      try{const list=await api("/api/students/activation-codes");
+      try{const list=await api("/api/admin/students/activation-codes");
         if(!list.length)return toast("Every student has claimed their account");
         const csv="roll_no,name,email,branch,code\n"+list.map(r=>
           [r.roll_no,r.full_name,r.email,r.branch,r.activation_code].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
@@ -1030,7 +1030,7 @@ function importModal(){
     const f=wrap.querySelector("#f").files[0];
     if(!f)throw new ApiError("Choose a CSV file.");
     const fd=new FormData();fd.append("file",f);
-    const r=await api("/api/students/import",{method:"POST",body:fd});
+    const r=await api("/api/admin/students/import",{method:"POST",body:fd});
     toast(`${r.imported} imported · ${r.skipped_existing||0} already there${r.errors&&r.errors.length?` · ${r.errors.length} rows rejected`:""}`);
     StudentsView();
   },"Import");
@@ -1043,7 +1043,7 @@ let policyTab="policy";
 async function PolicyView(){
   Shell(spinner,"#/policy");
   try{
-    const [policy,buckets]=await Promise.all([api("/api/policy"),api("/api/buckets")]);
+    const [policy,buckets]=await Promise.all([api("/api/admin/policy"),api("/api/buckets")]);
     BUCKETS=buckets;
     const render=()=>{
       const head=`<div class="head"><div><h1>Policy &amp; buckets</h1>
@@ -1103,7 +1103,7 @@ async function PolicyView(){
         const payload={max_offers:Number($("#p-max").value)||null,one_offer:$("#p-one").checked,
           upgrade:up,multiplier:Number($("#p-mult").value)||1};
         sp.disabled=true;
-        try{const r=await api("/api/policy",{method:"PUT",body:JSON.stringify(payload)});
+        try{const r=await api("/api/admin/policy",{method:"PUT",body:JSON.stringify(payload)});
           Object.assign(policy,r.policy||payload);toast("Policy saved");render();}
         catch(e){toast(displayError(e));}finally{sp.disabled=false;}
       };
@@ -1158,7 +1158,7 @@ async function PlannerView(){
               <div class="d">${esc(KIND[e.kind]||e.kind)} · ${fmtDate(e.at)}</div></div></div>`).join("")}
           </div></div>`:emptyCard("Nothing this month","Drive dates and test dates appear here as you add them.")));
       }else if(plannerTab==="notes"){
-        const notes=await api("/api/notes");
+        const notes=await api("/api/admin/notes");
         setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
           k=>{plannerTab=k;render();})+
           `<div class="card"><div class="ch"><h2>Notes</h2>
@@ -1178,12 +1178,12 @@ async function PlannerView(){
           async wrap=>{
             const title=wrap.querySelector("#n-t").value.trim();
             if(!title)throw new ApiError("Give the note a title.");
-            await api("/api/notes",{method:"POST",body:JSON.stringify({title,
+            await api("/api/admin/notes",{method:"POST",body:JSON.stringify({title,
               note_date:wrap.querySelector("#n-d").value,kind:wrap.querySelector("#n-k").value,
               body:wrap.querySelector("#n-b").value})});
             toast("Note added");render();});
         $$("[data-dn]").forEach(b=>b.onclick=async()=>{
-          try{await api(`/api/notes/${b.dataset.dn}`,{method:"DELETE"});toast("Deleted");render();}
+          try{await api(`/api/admin/notes/${b.dataset.dn}`,{method:"DELETE"});toast("Deleted");render();}
           catch(e){toast(displayError(e));}});
       }else{
         const rem=await api("/api/reminders");
@@ -1228,7 +1228,7 @@ let anTab="overview";
 async function AnalyticsView(){
   Shell(spinner,"#/analytics");
   try{
-    const a=await api("/api/analytics");
+    const a=await api("/api/admin/analytics");
     const render=()=>{
       const head=`<div class="head"><div><h1>Analytics</h1>
         <div class="sub">${a.overview.placed} placed · ${a.overview.placement_rate}% of students</div></div></div>`;
@@ -1298,7 +1298,7 @@ async function InboxView(){
     setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+spinner);
     try{
       if(inboxTab==="questions"){
-        const qs=await api("/api/questions");
+        const qs=await api("/api/admin/questions");
         setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+
           (qs.length?`<div class="card"><div class="list">${qs.map(q=>`
             <div class="row"><div class="bd"><div class="t">${esc(q.title)}</div>
@@ -1310,17 +1310,17 @@ async function InboxView(){
               :""}</div></div>`).join("")}</div></div>`
           :emptyCard("No questions","Students' questions appear here.")));
         $$("[data-esc]").forEach(b=>b.onclick=async()=>{
-          try{await api(`/api/questions/${b.dataset.esc}`,{method:"PATCH",body:JSON.stringify({status:"escalated"})});
+          try{await api(`/api/admin/questions/${b.dataset.esc}`,{method:"PATCH",body:JSON.stringify({status:"escalated"})});
             toast("Passed to the placement officer");render();}catch(e){toast(displayError(e));}});
         $$("[data-ans]").forEach(b=>b.onclick=()=>modal("Answer this question",
           `<label for="ans">Your answer</label><textarea id="ans" placeholder="Everyone in the college will see this."></textarea>`,
           async wrap=>{const answer=wrap.querySelector("#ans").value.trim();
             if(!answer)throw new ApiError("Write an answer.");
-            await api(`/api/questions/${b.dataset.ans}`,{method:"PATCH",
+            await api(`/api/admin/questions/${b.dataset.ans}`,{method:"PATCH",
               body:JSON.stringify({status:"answered",answer})});
             toast("Answered");render();}));
       }else{
-        const reqs=await api("/api/edit-requests");
+        const reqs=await api("/api/admin/edit-requests");
         setView(head+tabBar(tabs,inboxTab,k=>{inboxTab=k;render();})+
           (reqs.length?`<div class="card"><div class="list">${reqs.map(r=>`
             <div class="row"><div class="bd"><div class="t">${esc(r.full_name||r.roll_no||"Student")} — ${esc(r.field)}</div>
@@ -1331,7 +1331,7 @@ async function InboxView(){
               :`<span class="tag ${r.status==="approved"?"ok":"bad"}">${esc(r.status)}</span>`}</div></div>`).join("")}</div></div>`
           :emptyCard("Nothing pending","Corrections students ask for appear here.")));
         const act=async(id,status)=>{
-          try{await api(`/api/edit-requests/${id}`,{method:"PATCH",body:JSON.stringify({status})});
+          try{await api(`/api/admin/edit-requests/${id}`,{method:"PATCH",body:JSON.stringify({status})});
             toast(status==="approved"?"Approved and applied":"Rejected");render();}catch(e){toast(displayError(e));}};
         $$("[data-ok]").forEach(b=>b.onclick=()=>act(b.dataset.ok,"approved"));
         $$("[data-no]").forEach(b=>b.onclick=()=>act(b.dataset.no,"rejected"));
@@ -1406,7 +1406,7 @@ async function JuniorsView(){
   <p class="quiet">Imports and code downloads are recorded against your name.</p>`,"#/juniors");
   $("#jimport").onclick=importModal;
   $("#jcodes").onclick=async()=>{
-    try{const list=await api("/api/students/activation-codes");
+    try{const list=await api("/api/admin/students/activation-codes");
       if(!list.length)return toast("Every student in your branch has claimed their account");
       toast(`${list.length} unclaimed codes — use Students › Sign-in codes to download`);
     }catch(e){toast(displayError(e));}};

@@ -1,267 +1,271 @@
-# Deploying this release to EC2
+# Run it, check it, ship it
 
-You're on macOS, connecting to EC2 over SSH. This is every command, in order, with what to check after each one.
+Follow these in order. Each step says what to run and **what you should see**. If you don't see it, stop — the next step will make it worse, not better.
 
-Nothing here is destructive to your data. The one command that would be (`docker compose down -v`) is flagged where it appears, and you don't need it.
-
----
-
-## What's in this release
-
-| File | Where it goes | What it is |
-|---|---|---|
-| `migrations/0008_security_fixes.sql` | `migrations/` | Security fixes — drops the cross-tenant view, tightens `round_progress`, adds `audit_log`, `consent_events`, `score_history` |
-| `migrations/0009_placement_features.sql` | `migrations/` | Buckets, reminders, export templates, notification log, entitlements, junior/final-year split |
-| `backend/app/routers/placement.py` | `backend/app/routers/` | **New file** — buckets, reminders, calendar, publish, test reminder, bulk round updates, CSV export, resume zip |
-| `backend/app/permissions.py` | `backend/app/` | **Replaces** the existing file — adds the officer-only capability set |
-| `backend/app/main.py` | `backend/app/` | **Replaces** the existing file — registers the new router, tightens CORS |
-| `frontend/app/app.html` | `frontend/app/` | **Replaces** the existing file — the whole redesigned app |
-
-Two small edits you make by hand are in step 3.
+Your setup, which these commands assume: Ubuntu EC2 with an Elastic IP, Postgres on **RDS** (not in Docker), `docker-compose.aws.yml`, Caddy for TLS, `.env` in the repo root, you SSHing from macOS.
 
 ---
 
-## 0. Before you start — on your Mac
+## What I verified before writing this
 
-Get the files onto EC2. Two ways; the first is better because it leaves a record.
+I stood up PostgreSQL 16, applied your `01-schema.sql`, your `app_user` role and grants, your seed, and all eight migrations through your own `scripts/migration-lib.sh`. Then I ran every SQL statement in the new code as `app_user` with RLS active. Results:
 
-**Option A — through git (recommended).** Unzip into your local repo, commit, push, then pull on the server.
+- All 8 migrations applied clean, in order.
+- **Tenant isolation holds.** A second college was created; from college 1, zero rows of college 2 were visible in any of 12 tenant tables.
+- **CR branch scoping works** — a `sub_admin` scoped to CSE saw 10 students across exactly 1 branch.
+- **Students see only themselves** — 1 student row, 1 application.
+- **Reminders are private** — a different admin in the same college saw 0 of mine.
+- **The F-6 fix works** — a student sees 1 `round_progress` row (their own); the admin sees all 5. Before `0008` the student saw all 5.
+- **Sends are idempotent** — publishing twice and reminding twice both return zero rows the second time.
+- **The F-2 leak is real and now fixed** — before: a student query returned 4 drives including 1 unpublished draft. After: 3 drives, 0 drafts.
+- All 49 API paths the frontend calls resolve to real backend routes.
+
+What I could **not** run here: `uvicorn` itself, because PyPI is blocked in my sandbox. Step 7 is where you confirm the HTTP layer, and it's why the checks there are specific.
+
+One bug this caught, worth knowing about: `admin_extra.py` and `students_admin.py` mount at **`/api/admin`**, not `/api`. My first draft of `app.html` called them without the prefix, which would have broken the entire admin side at runtime. That's fixed in this zip.
+
+---
+
+## 1. Restore the 41 deleted files — before anything else
+
+Commit `36b46e5` ("new changes") deleted the whole backend app, `backend/Dockerfile`, `requirements.txt`, `db-init/`, the tests, migrations `0002`–`0007`, your landing page, and `docs/INFRA.md`. That's why `portal.py` is missing. `docker compose up --build` cannot work in this state — there's no Dockerfile to build from.
+
+**On your Mac:**
 
 ```bash
 cd /Users/er.vishalmishra/Documents/GitHub/Cohort
-unzip -o ~/Downloads/cohort-blueprint.zip -d .
 git checkout develop
-git add migrations backend frontend docs
-git commit -m "Placement features: buckets, reminders, exports, publish flow, redesigned app"
+git fetch origin && git pull origin develop
+
+git diff --name-only --diff-filter=D 64a7a78 HEAD | xargs git checkout 64a7a78 --
+```
+
+That restores only files that were deleted. Modified files (`main.py`, `permissions.py`, `app.html`) keep their newer versions; added files (`placement.py`, `0008`, `0009`) are untouched. I tested this exact command on a clone of your repo: 41 files return, nothing new is lost.
+
+**You should see:**
+
+```bash
+ls backend/app/routers/
+# __init__.py admin_extra.py auth_routes.py companies.py dashboard.py
+# placement.py portal.py students_admin.py
+```
+
+---
+
+## 2. Unzip this release ON TOP, then stage only these paths
+
+Order matters — restore first (step 1), then unzip, so the release files win.
+
+```bash
+unzip -o ~/Downloads/cohort-release.zip -d .
+
+git add backend/app/main.py backend/app/permissions.py \
+        backend/app/routers/placement.py backend/app/routers/portal.py \
+        frontend/app/app.html migrations/ docs/ scripts/verify-deploy.sql
+git add -u                      # picks up the 41 restored files
+git status --short | head -20
+```
+
+**Do not run `git add -A` after unzipping an overlay** — that is exactly what recorded the 41 deletions last time.
+
+`portal.py` is in this zip **with the draft-drive fix already applied**, so there is no manual `sed` step any more.
+
+```bash
+git commit -m "Restore deleted backend; add placement features, migrations 0008-0009, redesigned app"
 git push origin develop
 ```
 
-**Option B — copy straight up with scp.** Use this if you don't want to push yet.
+**Verify the tree is whole before you deploy:**
 
 ```bash
-cd ~/Downloads && unzip -o cohort-blueprint.zip -d cohort-release
-scp -i ~/.ssh/YOUR-KEY.pem -r cohort-release/* ubuntu@YOUR-EC2-IP:/home/ubuntu/Cohort/
+test -f backend/Dockerfile && test -f backend/requirements.txt \
+ && test -f backend/app/routers/portal.py && test -f backend/app/routers/placement.py \
+ && test -f backend/db-init/01-schema.sql \
+ && grep -q "WHERE status = 1" backend/app/routers/portal.py \
+ && echo "TREE OK — safe to deploy" || echo "STOP — something is missing"
 ```
 
-Replace `YOUR-KEY.pem`, `YOUR-EC2-IP` and the path if your repo lives elsewhere on the server.
+Only continue when it prints **TREE OK**.
 
 ---
 
-## 1. Connect and take a backup
+## 3. Connect and check what the server is currently running
 
 ```bash
-ssh -i ~/.ssh/YOUR-KEY.pem ubuntu@YOUR-EC2-IP
+ssh -i ~/.ssh/YOUR-KEY.pem ubuntu@YOUR-ELASTIC-IP
 cd ~/Cohort
+git log --oneline -1
+ls backend/app/routers/
 ```
 
-**Back the database up first.** Two minutes now, versus a bad afternoon later.
+If the server still lists `portal.py` etc., it's running the old complete code and nothing is down — good. It will pick up the restore when you pull.
+
+---
+
+## 4. Back up RDS
 
 ```bash
-# If your database is RDS:
-pg_dump "host=$RDS_HOST port=5432 dbname=placement user=$RDS_ADMIN_USER sslmode=require" \
+cd ~/Cohort
+set -a && source .env && set +a
+
+pg_dump "host=$RDS_HOST port=$RDS_PORT dbname=$RDS_DB user=$RDS_ADMIN_USER sslmode=require" \
   -Fc -f ~/cohort-backup-$(date +%F-%H%M).dump
 
-# If Postgres runs in Docker on this box:
-docker exec infra-db-1 pg_dump -U postgres placement \
-  | gzip > ~/cohort-backup-$(date +%F-%H%M).sql.gz
-
-ls -lh ~/cohort-backup-*        # confirm the file is not zero bytes
+ls -lh ~/cohort-backup-*.dump
 ```
 
-If you used Option A, pull the code now:
+Prompts for the RDS master password. If `pg_dump` is missing: `sudo apt install -y postgresql-client`.
 
-```bash
-git checkout develop && git pull origin develop
-```
+**You should see** a file of non-zero size. Also take an RDS console snapshot (**RDS → your instance → Actions → Take snapshot**, name it `pre-0009`) — it's free and instant.
 
 ---
 
-## 2. Check what you're about to change
+## 5. Pull the code
 
 ```bash
-git status
-git log --oneline -3
-ls -l migrations/0008_security_fixes.sql migrations/0009_placement_features.sql
-ls -l backend/app/routers/placement.py
+cd ~/Cohort
+git pull origin develop
+ls backend/app/routers/ && ls backend/Dockerfile backend/requirements.txt
 ```
 
-All four files should be there.
+**You should see** all eight router files and both build files.
 
 ---
 
-## 3. Two edits by hand
+## 6. Apply the migrations
 
-**Edit 1 — stop draft drives leaking to students.** `/api/me/drives` currently returns every drive including unpublished ones, so a student can see a company you haven't committed to. One line:
-
-```bash
-sed -i 's/FROM companies ORDER BY package DESC NULLS LAST/FROM companies WHERE status = 1 ORDER BY package DESC NULLS LAST/' \
-  backend/app/routers/portal.py
-
-grep -n "FROM companies WHERE status = 1" backend/app/routers/portal.py
-```
-
-That grep must print one line. If it prints nothing, open the file and add `WHERE status = 1` to the `drives = conn.execute(...)` query in `my_drives` yourself.
-
-**Edit 2 — optional, only if you serve the frontend from another domain.** Add one line to `backend/app/config.py` inside the `Settings` class:
-
-```python
-    allowed_origins: str = ""     # comma-separated; empty means same-origin only
-```
-
-Skip this if Caddy serves both the site and the API, which is the normal setup.
-
----
-
-## 4. Apply the migrations
-
-Your runner (`scripts/migration-lib.sh`) picks up `migrations/NNNN_*.sql` in order, records each in `schema_migrations`, and verifies checksums — so an already-applied migration is skipped, and running twice is safe.
-
-**If your database is RDS:**
+Your runner records each in `schema_migrations` and verifies checksums, so already-applied ones are skipped and re-running is safe.
 
 ```bash
+chmod +x scripts/migrate-rds.sh
 ./scripts/migrate-rds.sh
 ```
 
-It prompts for the RDS master password. You should see `0008_security_fixes` and `0009_placement_features` applied.
+**You should see** `0008_security_fixes` and `0009_placement_features` applied. `0002`–`0007` showing as already applied is correct.
 
-**If Postgres runs in Docker on this box:**
-
-```bash
-docker exec -i infra-db-1 psql -U postgres -d placement < migrations/0008_security_fixes.sql
-docker exec -i infra-db-1 psql -U postgres -d placement < migrations/0009_placement_features.sql
-```
-
-Confirm both landed:
+Then run the verification script that ships in this release:
 
 ```bash
-docker exec -i infra-db-1 psql -U postgres -d placement -c \
-  "SELECT version, applied_at FROM schema_migrations ORDER BY version;"
+psql "host=$RDS_HOST port=$RDS_PORT dbname=$RDS_DB user=$RDS_ADMIN_USER sslmode=require" \
+     -f scripts/verify-deploy.sql
 ```
 
-(For RDS, run the same query with `psql` against RDS instead.)
+**You should see PASS on all nine checks:**
 
-### One thing to check before 0008
-
-`0008` drops the `recruiter_candidates` view. Nothing in the code reads it, but it's worth knowing whether it was actually a cross-tenant read path on your database:
-
-```bash
-docker exec -i infra-db-1 psql -U postgres -d placement -c \
-  "SELECT pg_get_userbyid(c.relowner) AS owner, r.rolsuper, r.rolbypassrls
-     FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner
-    WHERE c.relname='recruiter_candidates';"
+```
+1. Migrations applied              PASS   (8 versions listed)
+2. New tables exist                PASS   (8 tables)
+3. Cross-tenant view is gone       PASS
+4. Every tenant table has forced RLS   PASS
+5. App connects as a non-superuser PASS
+6. Buckets seeded for every college    PASS
+7. No unpublished drive has registrations  PASS
+8. Notification dedupe constraint present  PASS
+9. round_progress scoped to the student    PASS
 ```
 
-If `rolsuper` or `rolbypassrls` came back `t`, that view was readable across every college. It's gone after the migration either way.
-
-### Verify the new tables exist
-
-```bash
-docker exec -i infra-db-1 psql -U postgres -d placement -c "\dt buckets|reminders|export_templates|notification_log|entitlements|audit_log"
-docker exec -i infra-db-1 psql -U postgres -d placement -c "SELECT key,label FROM buckets ORDER BY sort_order;"
-```
-
-The second should list Tier 1, Tier 2, Dream, Core, Internship — seeded automatically for each college.
+Any **FAIL** — stop and fix it before restarting the app. Check 5 failing is the serious one: it means the API is connecting as a role that bypasses row-level security, and tenant isolation is not actually being enforced.
 
 ---
 
-## 5. Rebuild and restart
+## 7. Rebuild and restart
 
 ```bash
 cd ~/Cohort/infra
-
-# AWS setup:
 docker compose -f docker-compose.aws.yml up -d --build backend caddy
-
-# Single-box setup:
-docker compose up -d --build backend caddy
 ```
 
-`--build` matters: `placement.py` is a new file and the image has to be rebuilt to include it.
+`--build` is required — `placement.py` is a new file and the image must be rebuilt to contain it.
 
-**Do not run `docker compose down -v`.** The `-v` deletes your database volume.
+**Never run `docker compose down -v`** — `-v` destroys your MinIO, Grafana and Caddy volumes.
 
----
+Leave `minio`, `prometheus`, `grafana`, `node-exporter`, `postgres-exporter` and `cadvisor` running.
 
-## 6. Verify
+### Confirm the HTTP layer
 
 ```bash
 curl -s localhost/api/health
 ```
 
-Expected:
+**Expected:** `{"status":"ok","db":"up","schema":"current"}`
 
-```json
-{"status":"ok","db":"up","schema":"current"}
-```
-
-If you get `"schema":"upgrade_required"`, a migration didn't apply — go back to step 4. The app deliberately refuses to serve `/api/*` against a half-migrated database rather than throwing confusing 500s.
-
-Check the new endpoints answer:
+If you get `"schema":"upgrade_required"`, a migration didn't apply — back to step 6. The app deliberately refuses to serve `/api/*` against a half-migrated database.
 
 ```bash
-docker compose logs --tail=40 backend         # no tracebacks on startup
-curl -s -o /dev/null -w "%{http_code}\n" localhost/api/buckets    # 401 without a token is correct
+docker compose -f docker-compose.aws.yml logs --tail=40 backend
 ```
 
-`401` is the right answer there — it means the route exists and authentication is being enforced.
+**Expected:** startup lines, no tracebacks. A `ModuleNotFoundError: placement` means the image was built before the file arrived — run step 7 again.
 
-Then open the site in a browser, sign in as the placement officer, and walk these:
+```bash
+curl -s -o /dev/null -w "buckets      %{http_code}\n" localhost/api/buckets
+curl -s -o /dev/null -w "entitlements %{http_code}\n" localhost/api/entitlements
+curl -s -o /dev/null -w "admin/policy %{http_code}\n" localhost/api/admin/policy
+curl -s localhost/api/auth/config
+```
 
-1. **Drives → Add company / drive** — pick a bucket, answer "any customisation?" with **No**. It should create a draft.
-2. **Drives** — the new drive shows as *Draft*. Press **Publish**. It should flip to *Open*.
-3. Open the drive → **Who can apply** — add a CGPA condition, press **Preview count**.
-4. **Downloads** — tick a few columns, **Download CSV**. The file should open in Excel with exactly those columns.
-5. **Policy & buckets** — set the offer rule to **Both** with a 1.5 multiplier and save.
-6. Sign in as a student — **Drives** should show a search box, only eligible drives by default, and the reason for each blocked one when you tick the box.
+**Expected:** `401` for the first three — the routes exist and authentication is being enforced. A `404` means the router didn't load. `/api/auth/config` should return JSON.
 
 ---
 
-## 7. If something looks wrong
+## 8. Click through it
 
-**Roll the backend back** (the database migrations are additive and safe to leave in place):
+Open `http://YOUR-ELASTIC-IP/app`, sign in as the placement officer, and do these six. Each one exercises a different new code path.
+
+| # | Do this | You should see |
+|---|---|---|
+| 1 | **Drives → Add company / drive** — pick a bucket, answer "any customisation?" **No** | Drive created as a **Draft** |
+| 2 | Press **Publish** on it | Flips to **Open**; toast says students weren't emailed (no verified group yet) |
+| 3 | Open it → **Who can apply** → add a CGPA condition → **Preview count** | Toast: "N of M students qualify" |
+| 4 | **Downloads** → tick columns → **Download CSV** | CSV downloads, opens in Excel with exactly those columns |
+| 5 | **Policy & buckets** → set offer rule to **Both**, multiplier 1.5 → Save | Footer reads "higher bucket and pay at least 1.5× their current offer" |
+| 6 | Sign out, sign in as a student → **Drives** | Search box present; only eligible drives shown; ticking the box reveals blocked ones **with the reason** |
+
+Then confirm the audit trail is being written:
+
+```bash
+psql "host=$RDS_HOST port=$RDS_PORT dbname=$RDS_DB user=$RDS_ADMIN_USER sslmode=require" -c \
+"SELECT action, actor_role, created_at FROM audit_log ORDER BY created_at DESC LIMIT 10;"
+```
+
+**Expected:** rows for `drive.publish` and `registrations.export`. If it's empty after doing steps 1–4, the new router isn't being hit.
+
+---
+
+## 9. If something breaks
+
+**Roll the app back** — migrations are additive, leave them in place:
 
 ```bash
 cd ~/Cohort
 git log --oneline -5
-git checkout <previous-commit-sha> -- backend/app frontend/app
-cd infra && docker compose up -d --build backend caddy
+git checkout <previous-sha> -- backend/app frontend/app
+cd infra && docker compose -f docker-compose.aws.yml up -d --build backend caddy
 ```
 
-**Restore the database** (only if you need to):
+**Restore RDS** (only if you must):
 
 ```bash
-# RDS
-pg_restore -c -d "host=$RDS_HOST port=5432 dbname=placement user=$RDS_ADMIN_USER sslmode=require" \
+pg_restore -c -d "host=$RDS_HOST port=$RDS_PORT dbname=$RDS_DB user=$RDS_ADMIN_USER sslmode=require" \
   ~/cohort-backup-YYYY-MM-DD-HHMM.dump
-
-# Docker
-gunzip -c ~/cohort-backup-YYYY-MM-DD-HHMM.sql.gz | docker exec -i infra-db-1 psql -U postgres -d placement
 ```
 
-**Common problems**
-
-| What you see | Cause | Fix |
+| Symptom | Cause | Fix |
 |---|---|---|
-| `"schema":"upgrade_required"` | A migration didn't apply | Re-run step 4, check `schema_migrations` |
-| `ModuleNotFoundError: placement` | Image built before the file was copied | `docker compose up -d --build backend` again |
-| `/api/buckets` returns 500 | `0009` not applied | Apply `0009` |
-| Buckets list is empty for a college | College created after the migration ran | Insert its five rows, or re-run the seed block at the top of `0009` |
-| Students see drives you haven't published | Edit 1 in step 3 wasn't applied | Re-run that `sed`, rebuild |
-| CSV export returns 422 | A column key isn't in the server-side allow-list | That's working as intended — pick columns from the UI list |
+| `failed to read dockerfile` | `backend/Dockerfile` missing | Step 1 restore |
+| `ModuleNotFoundError: placement` | Image built before the file arrived | Step 7 again |
+| `"schema":"upgrade_required"` | Migration didn't apply | Step 6 |
+| `/api/buckets` → 404 | Router not registered | Confirm `main.py` from this zip is in place |
+| `/api/admin/policy` → 404 | Wrong prefix somewhere | These live at `/api/admin`, not `/api` |
+| Admin screens blank, console 404s | Old `app.html` still cached | Hard-refresh (⌘⇧R) |
+| CSV export → 422 | Column not in the server allow-list | Working as intended — pick from the UI list |
+| Students see unpublished drives | Old `portal.py` | `grep "WHERE status = 1" backend/app/routers/portal.py` |
+| Buckets empty for a college | College created after `0009` ran | Re-run the seed block at the top of `0009` |
 
 ---
 
-## 8. After it's live
+## 10. Two things in the first week
 
-Two things worth doing in the first week.
+**Turn on branch protection.** GitHub → Settings → Branches → rule for `main` and `develop`: require a pull request, block force-pushes. The 41-file deletion would have shown up as a diff instead of landing silently. Five minutes, and it's the single highest-value thing on this page.
 
-**Set the student group address.** Publishing a drive announces it by email, but only once a verified group address exists. Until then publishing still works, it just doesn't email anyone — the UI says so. Verification is deliberate: an unverified address means an admin could point every announcement outside the college.
-
-**Watch `audit_log`.** Every publish, export, bulk update and resume download now writes a row:
-
-```bash
-docker exec -i infra-db-1 psql -U postgres -d placement -c \
-  "SELECT action, actor_role, detail, created_at FROM audit_log ORDER BY created_at DESC LIMIT 20;"
-```
-
-If that table stays empty after you've used the app, the new router isn't being hit — check step 5.
+**Set the student group address.** Publishing announces a drive by email, but only once a verified group address exists. Until then publishing works and simply doesn't email — the UI tells you so. The verification step is deliberate: an unverified address would let an admin point every announcement outside the college.
