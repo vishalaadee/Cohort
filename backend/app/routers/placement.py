@@ -19,10 +19,14 @@ import json
 import re
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import text
 
+from .. import mailer
+from ..attachments import (ALLOWED_ATTACHMENT_MIMES, ATTACHMENT_KINDS,
+                           MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_DRIVE,
+                           safe_filename)
 from ..auth import Claims, get_claims
 from ..db import tenant_connection
 from ..permissions import (require_cr_capability, require_placement_officer,
@@ -190,7 +194,13 @@ def calendar(month: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"),
              claims: Claims = Depends(get_claims)):
     require_staff(claims)
     month = month or datetime.now(timezone.utc).strftime("%Y-%m")
-    start = datetime.strptime(month + "-01", "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    # The Query pattern accepts any two digits, so "2026-13" and "2026-00" get
+    # through it and reach strptime, which raises ValueError -> 500. Now that
+    # the planner actually sends this parameter, turn that into a 422.
+    try:
+        start = datetime.strptime(month + "-01", "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(422, f"{month} is not a real month")
     end = (start + timedelta(days=32)).replace(day=1)
     params = {"s": start, "e": end}
     with tenant_connection(claims) as conn:
@@ -241,27 +251,125 @@ def publish_drive(cid: int, claims: Claims = Depends(get_claims)):
         """), {"u": claims.user_id, "c": cid})
 
         group = conn.execute(text("""
-            SELECT notify_groups -> 'students' ->> 'email'      AS email,
+            SELECT name AS college_name,
+                   notify_groups -> 'students' ->> 'email'       AS email,
                    notify_groups -> 'students' ->> 'verified_at' AS verified_at
             FROM colleges WHERE id = :col
         """), {"col": claims.college_id}).mappings().first() or {}
 
-        announced = False
+        announced, mail_status, mail_error = False, None, None
+
         if group.get("email") and group.get("verified_at"):
             # Idempotent: the unique dedupe_key makes a second publish a no-op.
-            announced = conn.execute(text("""
+            notif_id = conn.execute(text("""
                 INSERT INTO notification_log (college_id, kind, resource_type,
                                               resource_id, dedupe_key, recipients, sent_by)
                 VALUES (:c, 'drive_published', 'company', :r, :k, 1, :u)
                 ON CONFLICT (college_id, dedupe_key) DO NOTHING
                 RETURNING id
             """), {"c": claims.college_id, "r": cid,
-                   "k": f"drive_published:{cid}", "u": claims.user_id}).scalar() is not None
+                   "k": f"drive_published:{cid}", "u": claims.user_id}).scalar()
+
+            if notif_id is not None:
+                result = _send_drive_announcement(
+                    conn, claims, cid, group["email"],
+                    group.get("college_name") or "Your college")
+                mailer.record(conn, claims, result, notif_id)
+                mail_status, mail_error = result.status, result.error
+
+                if result.ok:
+                    announced = True
+                else:
+                    # The send failed, so drop the dedupe row. Otherwise the
+                    # log says "announced" forever and pressing Publish again
+                    # — the obvious thing to try — would do nothing at all.
+                    # The drive stays published: that part did work.
+                    conn.execute(text("DELETE FROM notification_log WHERE id = :n"),
+                                 {"n": notif_id})
+            else:
+                announced, mail_status = True, "already_sent"
 
         _audit(conn, claims, "drive.publish", "company", cid,
-               {"name": row["name"], "announced": announced})
+               {"name": row["name"], "announced": announced,
+                "mail_status": mail_status})
+
     return {"published": True, "announced": announced,
-            "group": group.get("email"), "verified": bool(group.get("verified_at"))}
+            "group": group.get("email"), "verified": bool(group.get("verified_at")),
+            "mail_status": mail_status, "mail_error": mail_error}
+
+
+def _send_drive_announcement(conn, claims: Claims, cid: int,
+                             to_address: str, college_name: str):
+    """Build and send the announcement for a drive, JDs attached.
+
+    Split out of publish_drive so the retry endpoint below sends exactly the
+    same message rather than a second, subtly different implementation of it.
+    """
+    drive = conn.execute(text("""
+        SELECT c.name, c.role_title, c.package, c.deadline, c.test_date,
+               c.venue, c.restriction_note, b.label AS bucket_label
+          FROM companies c
+          LEFT JOIN buckets b ON b.college_id = c.college_id AND b.key = c.category
+         WHERE c.id = :c
+    """), {"c": cid}).mappings().first() or {}
+
+    files = conn.execute(text("""
+        SELECT filename, mime, data FROM drive_attachments
+         WHERE company_id = :c ORDER BY created_at
+    """), {"c": cid}).mappings().all()
+
+    attachments = [mailer.Attachment(filename=f["filename"], mime=f["mime"],
+                                     data=bytes(f["data"])) for f in files]
+
+    portal_url = str(mailer.conf("PORTAL_URL", "") or "").rstrip("/") + "/app"
+    subject, text_body, html = mailer.drive_announcement(
+        dict(drive), college_name, portal_url, attachments)
+    return mailer.send_mail(to_address, subject, text_body, html, attachments)
+
+
+@router.post("/companies/{cid}/resend-announcement")
+def resend_announcement(cid: int, claims: Claims = Depends(get_claims)):
+    """Send the announcement again — after a failed send, or after attaching a
+    JD that missed the original.
+
+    Not idempotent, by design: the officer is explicitly asking to send again,
+    and the only reason to be here is that the first attempt didn't land. It is
+    audited, and the mail_log shows every send, so 'who mailed the group twice'
+    always has an answer.
+    """
+    require_placement_officer(claims)
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("SELECT id, name, status FROM companies WHERE id = :c"),
+                           {"c": cid}).mappings().first()
+        if not row:
+            raise HTTPException(404, "Drive not found")
+        if row["status"] != 1:
+            raise HTTPException(409, "Publish the drive before announcing it")
+
+        group = conn.execute(text("""
+            SELECT name AS college_name,
+                   notify_groups -> 'students' ->> 'email'       AS email,
+                   notify_groups -> 'students' ->> 'verified_at' AS verified_at
+            FROM colleges WHERE id = :col
+        """), {"col": claims.college_id}).mappings().first() or {}
+
+        if not group.get("email"):
+            raise HTTPException(409, "No student group address is set")
+        if not group.get("verified_at"):
+            raise HTTPException(409, "The student group address is not confirmed yet")
+
+        result = _send_drive_announcement(
+            conn, claims, cid, group["email"],
+            group.get("college_name") or "Your college")
+        mailer.record(conn, claims, result)
+        _audit(conn, claims, "drive.announcement_resend", "company", cid,
+               {"status": result.status, "to": group["email"]})
+
+    if result.status == "skipped":
+        raise HTTPException(503, result.error or "Email is not configured on this server")
+    if result.status == "failed":
+        raise HTTPException(502, result.error or "The mail server rejected the message")
+    return {"sent": True, "to": group["email"], "attachments": result.attachments}
 
 
 @router.post("/companies/{cid}/test-reminder")
@@ -657,3 +765,306 @@ def entitlements(claims: Claims = Depends(get_claims)):
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("SELECT feature, enabled FROM entitlements")).all()
     return {feature: enabled for feature, enabled in rows}
+
+
+# ===========================================================================
+# Drive attachments — the JD and up to two companions
+#
+# Limits, the MIME allow-list and filename handling live in ../attachments.py
+# because portal.py serves the student's download of the same file and the two
+# must agree on what it is called.
+# ===========================================================================
+def _attachment_rows(conn, cid: int):
+    return conn.execute(text("""
+        SELECT id, kind, filename, mime, byte_size, created_at
+          FROM drive_attachments
+         WHERE company_id = :c
+         ORDER BY created_at
+    """), {"c": cid}).mappings().all()
+
+
+@router.get("/companies/{cid}/attachments")
+def list_attachments(cid: int, claims: Claims = Depends(get_claims)):
+    """Metadata only — never the bytes. Staff see attachments on any drive."""
+    require_staff(claims)
+    with tenant_connection(claims) as conn:
+        rows = _attachment_rows(conn, cid)
+    return [dict(r) for r in rows]
+
+
+@router.post("/companies/{cid}/attachments")
+async def upload_attachment(cid: int,
+                            file: UploadFile,
+                            kind: str = Query("jd"),
+                            claims: Claims = Depends(get_claims)):
+    """Attach a JD (or form/brochure) to a drive. Officer only.
+
+    Deliberately not a CR capability: an attachment goes out by email to the
+    whole college on publish, which makes it an announcement, and announcing
+    is officer-only everywhere else in this module.
+    """
+    require_placement_officer(claims)
+
+    if kind not in ATTACHMENT_KINDS:
+        raise HTTPException(422, f"kind must be one of: {', '.join(sorted(ATTACHMENT_KINDS))}")
+
+    mime = (file.content_type or "").split(";")[0].strip().lower()
+    if mime not in ALLOWED_ATTACHMENT_MIMES:
+        raise HTTPException(
+            422, "Attach a PDF, Word document or image. "
+                 f"That file is {mime or 'of an unknown type'}.")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(422, "That file is empty")
+    if len(data) > MAX_ATTACHMENT_BYTES:
+        raise HTTPException(
+            422, f"{file.filename} is {len(data) // 1024 // 1024} MB. "
+                 f"The limit is {MAX_ATTACHMENT_BYTES // 1024 // 1024} MB per file.")
+
+    filename = (file.filename or "attachment").strip()[:200]
+
+    with tenant_connection(claims) as conn:
+        # FOR UPDATE locks this drive's row for the rest of the transaction, so
+        # two uploads to the same drive queue instead of racing. Without it both
+        # can read count = 2, both pass the check, and the drive ends up with
+        # four attachments — the cap is checked and written non-atomically.
+        # Locking the parent is the cheapest way to serialise; it blocks only
+        # concurrent writers to this one drive.
+        drive = conn.execute(
+            text("SELECT id, name, status FROM companies WHERE id = :c FOR UPDATE"),
+            {"c": cid}).mappings().first()
+        if not drive:
+            raise HTTPException(404, "Drive not found")
+
+        count = conn.execute(text(
+            "SELECT count(*) FROM drive_attachments WHERE company_id = :c"),
+            {"c": cid}).scalar() or 0
+        if count >= MAX_ATTACHMENTS_PER_DRIVE:
+            raise HTTPException(
+                409, f"This drive already has {MAX_ATTACHMENTS_PER_DRIVE} attachments. "
+                     "Remove one before adding another.")
+
+        aid = conn.execute(text("""
+            INSERT INTO drive_attachments (college_id, company_id, kind, filename,
+                                           mime, byte_size, data, uploaded_by)
+            VALUES (:col, :c, :k, :f, :m, :s, :d, :u)
+            RETURNING id
+        """), {"col": claims.college_id, "c": cid, "k": kind, "f": filename,
+               "m": mime, "s": len(data), "d": data, "u": claims.user_id}).scalar()
+
+        _audit(conn, claims, "drive.attachment_add", "company", cid,
+               {"attachment_id": aid, "filename": filename,
+                "kind": kind, "bytes": len(data)})
+
+        # Published already? Then this file missed the announcement email.
+        # Say so rather than letting the officer assume students have it.
+        late = drive["status"] == 1
+
+    return {"id": aid, "filename": filename, "kind": kind,
+            "byte_size": len(data), "slots_left": MAX_ATTACHMENTS_PER_DRIVE - count - 1,
+            "after_publish": late}
+
+
+@router.get("/companies/{cid}/attachments/{aid}/download")
+def download_attachment(cid: int, aid: int, claims: Claims = Depends(get_claims)):
+    """Staff download. The student-facing equivalent lives in portal.py, where
+    the published-status check belongs."""
+    require_staff(claims)
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("""
+            SELECT filename, mime, data FROM drive_attachments
+             WHERE id = :a AND company_id = :c
+        """), {"a": aid, "c": cid}).mappings().first()
+    if not row:
+        raise HTTPException(404, "Attachment not found")
+    return Response(
+        content=row["data"], media_type=row["mime"],
+        headers={"Content-Disposition":
+                 f'attachment; filename="{safe_filename(row["filename"], row["mime"])}"'})
+
+
+@router.delete("/companies/{cid}/attachments/{aid}")
+def delete_attachment(cid: int, aid: int, claims: Claims = Depends(get_claims)):
+    require_placement_officer(claims)
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("""
+            DELETE FROM drive_attachments
+             WHERE id = :a AND company_id = :c
+            RETURNING filename
+        """), {"a": aid, "c": cid}).mappings().first()
+        if not row:
+            raise HTTPException(404, "Attachment not found")
+        _audit(conn, claims, "drive.attachment_remove", "company", cid,
+               {"attachment_id": aid, "filename": row["filename"]})
+    return {"deleted": True, "filename": row["filename"]}
+
+
+# ===========================================================================
+# Announcement group addresses — officer-only, and verified before use
+# ===========================================================================
+GROUP_KEYS = {"students": "final-year students", "juniors": "juniors"}
+VERIFICATION_VALID_HOURS = 48
+
+
+@router.get("/notify-groups")
+def get_notify_groups(claims: Claims = Depends(get_claims)):
+    """The two addresses announcements can go to, and whether each is verified."""
+    require_staff(claims)
+    with tenant_connection(claims) as conn:
+        raw = conn.execute(text("SELECT notify_groups FROM colleges WHERE id = :c"),
+                           {"c": claims.college_id}).scalar() or {}
+    if isinstance(raw, str):
+        raw = json.loads(raw)
+    out = {}
+    for key, label in GROUP_KEYS.items():
+        entry = raw.get(key) or {}
+        out[key] = {"label": label,
+                    "email": entry.get("email"),
+                    "verified": bool(entry.get("verified_at")),
+                    "verified_at": entry.get("verified_at")}
+    return out
+
+
+@router.put("/notify-groups")
+def set_notify_groups(payload: dict, claims: Claims = Depends(get_claims)):
+    """Set one or both group addresses. Placement officer only.
+
+    Changing an address clears its verification. That is the whole point: an
+    account that has been taken over could otherwise point every future
+    announcement at an outside address, and nothing downstream would notice
+    because the address was verified once, months ago, when it was different.
+    """
+    require_placement_officer(claims)
+
+    updates = {k: v for k, v in payload.items() if k in GROUP_KEYS}
+    if not updates:
+        raise HTTPException(422, f"Send one or both of: {', '.join(GROUP_KEYS)}")
+
+    with tenant_connection(claims) as conn:
+        raw = conn.execute(text("SELECT notify_groups FROM colleges WHERE id = :c"),
+                           {"c": claims.college_id}).scalar() or {}
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        groups = dict(raw)
+        changed = []
+
+        for key, value in updates.items():
+            email = (value or "").strip().lower() if isinstance(value, str) else \
+                    (value or {}).get("email", "").strip().lower()
+
+            if not email:
+                groups.pop(key, None)
+                changed.append({"group": key, "email": None, "action": "cleared"})
+                continue
+
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", email):
+                raise HTTPException(422, f"{email} is not a valid email address")
+
+            existing = groups.get(key) or {}
+            if existing.get("email") == email:
+                continue                       # no change, keep verification
+            groups[key] = {"email": email, "verified_at": None}
+            changed.append({"group": key, "email": email, "action": "set"})
+
+        if not changed:
+            return {"changed": False, **{k: groups.get(k) for k in GROUP_KEYS}}
+
+        conn.execute(text("UPDATE colleges SET notify_groups = CAST(:g AS jsonb) WHERE id = :c"),
+                     {"g": json.dumps(groups), "c": claims.college_id})
+        _audit(conn, claims, "college.notify_groups_set", "college",
+               claims.college_id, {"changed": changed})
+
+    return {"changed": True,
+            **{k: {"email": (groups.get(k) or {}).get("email"),
+                   "verified": bool((groups.get(k) or {}).get("verified_at"))}
+               for k in GROUP_KEYS}}
+
+
+@router.post("/notify-groups/{key}/send-verification")
+def send_group_verification(key: str, claims: Claims = Depends(get_claims)):
+    """Mail a confirmation link to the group address itself.
+
+    Whoever receives mail at that address confirms it. An officer typing an
+    address is a claim; a click from inside that mailbox is evidence.
+    """
+    require_placement_officer(claims)
+    if key not in GROUP_KEYS:
+        raise HTTPException(404, "No such group")
+
+    import secrets
+    from .. import mailer
+
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("""
+            SELECT name, notify_groups FROM colleges WHERE id = :c
+        """), {"c": claims.college_id}).mappings().first()
+        raw = row["notify_groups"] or {}
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        entry = raw.get(key) or {}
+        email = entry.get("email")
+        if not email:
+            raise HTTPException(409, f"Set the {GROUP_KEYS[key]} address first")
+        if entry.get("verified_at"):
+            return {"sent": False, "already_verified": True, "email": email}
+
+        token = secrets.token_urlsafe(32)
+        conn.execute(text("""
+            INSERT INTO group_verifications (college_id, group_key, email, token,
+                                             expires_at, created_by)
+            VALUES (:c, :k, :e, :t, now() + make_interval(hours => :h), :u)
+        """), {"c": claims.college_id, "k": key, "e": email, "t": token,
+               "h": VERIFICATION_VALID_HOURS, "u": claims.user_id})
+
+        base = (mailer.conf("PORTAL_URL", "") or "").rstrip("/")
+        verify_url = f"{base}/api/notify-groups/{key}/verify?token={token}"
+        subject, text_body, html = mailer.group_verification(
+            row["name"] or "Your college", GROUP_KEYS[key], verify_url)
+        result = mailer.send_mail(email, subject, text_body, html)
+        mailer.record(conn, claims, result)
+
+        _audit(conn, claims, "college.group_verification_sent", "college",
+               claims.college_id, {"group": key, "email": email,
+                                   "status": result.status})
+
+    if result.status == "skipped":
+        raise HTTPException(503, result.error or "Email is not configured on this server")
+    if result.status == "failed":
+        raise HTTPException(502, result.error or "Could not send the confirmation email")
+    return {"sent": True, "email": email, "valid_hours": VERIFICATION_VALID_HOURS}
+
+
+@router.get("/notify-groups/{key}/verify")
+def verify_group(key: str, token: str = Query(..., min_length=20, max_length=200)):
+    """Opened from the confirmation email. Unauthenticated by necessity — the
+    person clicking is a mailbox, not a logged-in user. The token is the proof:
+    256 bits, single-use, and it expires.
+
+    This cannot go through tenant_connection, because there is no logged-in
+    user to derive a college from. It cannot go through a plain connection
+    either: with no app.college_id set, app_college() is NULL, every RLS policy
+    on group_verifications evaluates to NULL, and the UPDATE matches zero rows —
+    so the link would fail as 'expired' every time. The work is therefore done
+    inside consume_group_verification (migration 0010), a SECURITY DEFINER
+    function that is narrow, token-gated, and the only path in.
+    """
+    if key not in GROUP_KEYS:
+        raise HTTPException(404, "No such group")
+
+    from ..db import engine
+    with engine.begin() as conn:
+        row = conn.execute(
+            text("SELECT out_college_id, out_email "
+                 "FROM consume_group_verification(:k, :t)"),
+            {"k": key, "t": token}).mappings().first()
+
+    if not row:
+        # Deliberately one message for every failure — wrong token, used token,
+        # expired token, address changed since. Distinguishing them would let
+        # someone with a guessed token learn which guess was closer.
+        raise HTTPException(410, "This confirmation link is no longer valid. "
+                                 "Ask the placement office to send a new one.")
+
+    return {"verified": True, "group": key, "email": row["out_email"],
+            "message": "This address is confirmed. Announcements can now be sent to it."}

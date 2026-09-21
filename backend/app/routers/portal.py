@@ -1,11 +1,60 @@
 """Student-facing endpoints beyond the shared dashboard/companies."""
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from sqlalchemy import text
 
+from ..attachments import safe_filename
 from ..auth import Claims, get_claims
 from ..db import tenant_connection
 
 router = APIRouter(prefix="/api/me", tags=["portal"])
+
+
+# =========================== drive attachments =============================
+# RLS lets a student read any drive_attachments row in their college, because
+# the row carries no secret. What decides whether they may see THIS one is
+# whether the drive is published — status = 1 — which is the same filter
+# my_drives applies. It is repeated explicitly in both queries below rather
+# than assumed, because that check being missing from one query is exactly
+# how the draft-drive leak happened.
+
+@router.get("/drives/{company_id}/attachments")
+def drive_attachments(company_id: int, claims: Claims = Depends(get_claims)):
+    """JD and related files for a published drive. Metadata only."""
+    if claims.role != "student":
+        raise HTTPException(403, "Student account required")
+    with tenant_connection(claims) as conn:
+        published = conn.execute(text(
+            "SELECT 1 FROM companies WHERE id = :c AND status = 1"),
+            {"c": company_id}).scalar()
+        if not published:
+            raise HTTPException(404, "Drive not found")
+        rows = conn.execute(text("""
+            SELECT id, kind, filename, mime, byte_size, created_at
+              FROM drive_attachments
+             WHERE company_id = :c
+             ORDER BY created_at
+        """), {"c": company_id}).mappings().all()
+    return [dict(r) for r in rows]
+
+
+@router.get("/drives/{company_id}/attachments/{attachment_id}/download")
+def download_drive_attachment(company_id: int, attachment_id: int,
+                              claims: Claims = Depends(get_claims)):
+    if claims.role != "student":
+        raise HTTPException(403, "Student account required")
+    with tenant_connection(claims) as conn:
+        row = conn.execute(text("""
+            SELECT a.filename, a.mime, a.data
+              FROM drive_attachments a
+              JOIN companies c ON c.id = a.company_id
+             WHERE a.id = :a AND a.company_id = :c AND c.status = 1
+        """), {"a": attachment_id, "c": company_id}).mappings().first()
+    if not row:
+        raise HTTPException(404, "Attachment not found")
+    # Same helper the officer's download uses, so one file has one name.
+    return Response(content=row["data"], media_type=row["mime"],
+                    headers={"Content-Disposition":
+                             f'attachment; filename="{safe_filename(row["filename"], row["mime"])}"'})
 
 
 @router.get("/drives")

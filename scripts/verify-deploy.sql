@@ -12,17 +12,18 @@
 
 \echo ''
 \echo '=== 1. Migrations applied ==='
-SELECT CASE WHEN count(*) = 8 THEN 'PASS' ELSE 'FAIL — expected 8, found '||count(*) END AS result,
+SELECT CASE WHEN count(*) = 9 THEN 'PASS' ELSE 'FAIL — expected 9, found '||count(*) END AS result,
        string_agg(version, ', ' ORDER BY version) AS versions
 FROM schema_migrations;
 
 \echo ''
 \echo '=== 2. New tables exist ==='
-SELECT CASE WHEN count(*) = 8 THEN 'PASS' ELSE 'FAIL — missing '||(8-count(*))::text END AS result,
+SELECT CASE WHEN count(*) = 11 THEN 'PASS' ELSE 'FAIL — missing '||(11-count(*))::text END AS result,
        string_agg(tablename, ', ' ORDER BY tablename) AS found
 FROM pg_tables WHERE schemaname='public'
   AND tablename IN ('buckets','reminders','export_templates','notification_log',
-                    'entitlements','audit_log','consent_events','score_history');
+                    'entitlements','audit_log','consent_events','score_history',
+                    'drive_attachments','mail_log','group_verifications');
 
 \echo ''
 \echo '=== 3. The cross-tenant view is gone (SECURITY_REVIEW F-1) ==='
@@ -72,7 +73,29 @@ SELECT CASE WHEN pg_get_expr(polqual, polrelid) LIKE '%user_id%' THEN 'PASS'
 FROM pg_policy WHERE polname='t_round_progress';
 
 \echo ''
-\echo '=== 10. Row counts (sanity — these should look like your college) ==='
+\echo '=== 10. No JD is reachable on an unpublished drive (0010) ==='
+SELECT CASE WHEN count(*) = 0 THEN 'PASS'
+            ELSE 'FAIL — '||count(*)||' attachment(s) on draft drives; check portal.py filters status=1' END AS result
+FROM drive_attachments a
+JOIN companies c ON c.id = a.company_id
+WHERE c.status <> 1
+  AND EXISTS (SELECT 1 FROM applications ap WHERE ap.company_id = c.id);
+
+\echo ''
+\echo '=== 11. Announcement addresses — set, and confirmed before use (0010) ==='
+SELECT c.name AS college,
+       COALESCE(c.notify_groups->'students'->>'email','(not set)') AS student_group,
+       CASE
+         WHEN c.notify_groups->'students'->>'email' IS NULL
+           THEN 'INFO — not set; publishing will not email anyone'
+         WHEN c.notify_groups->'students'->>'verified_at' IS NULL
+           THEN 'INFO — set but NOT confirmed; publishing will not email until confirmed'
+         ELSE 'PASS — confirmed, announcements will send'
+       END AS result
+FROM colleges c ORDER BY c.id;
+
+\echo ''
+\echo '=== 12. Row counts (sanity — these should look like your college) ==='
 SELECT (SELECT count(*) FROM colleges)     AS colleges,
        (SELECT count(*) FROM students)     AS students,
        (SELECT count(*) FROM companies)    AS drives,

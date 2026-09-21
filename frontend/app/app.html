@@ -533,8 +533,17 @@ async function TodayView(){
 async function publishDrive(id){
   try{
     const r=await api(`/api/companies/${id}/publish`,{method:"POST"});
-    toast(r.already?"Already published":(r.announced?"Published — students notified":
-      "Published. Set a verified group address in Settings to announce it by email."));
+    // The drive is published in every branch below — only the email differs.
+    // Saying "set a group address" when one IS set and the mail server simply
+    // refused us would send the officer to fix the wrong thing.
+    let msg;
+    if(r.already)                      msg="Already published";
+    else if(r.announced)               msg="Published — students notified";
+    else if(r.mail_status==="failed")  msg=`Published, but the email failed: ${r.mail_error||"the mail server refused it"}. Try Resend on the JD & files tab.`;
+    else if(r.mail_status==="skipped") msg="Published. Email isn't set up on this server, so nobody was notified.";
+    else if(r.group&&!r.verified)      msg="Published. Confirm your group address in Settings before it can be announced.";
+    else                               msg="Published. Set a group address in Settings to announce it by email.";
+    toast(msg);
     route();
   }catch(e){toast(displayError(e));}
 }
@@ -654,7 +663,7 @@ async function DriveView(id){
   try{
     if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
     const d=await api(`/api/companies/${id}/details`);
-    const tabs=[["students","Students"],["details","Details"]];
+    const tabs=[["students","Students"],["details","Details"],["files","JD & files"]];
     if(isOfficer())tabs.push(["rules","Who can apply"],["downloads","Downloads"],["emails","Emails"]);
 
     const draw=async()=>{
@@ -664,6 +673,8 @@ async function DriveView(id){
           body=studentsTab(r);wire=()=>wireStudents(id);}
         else if(driveTab==="details"){const r=await api(`/api/admin/companies/${id}/registrations`).catch(()=>[]);
           body=detailsTab(d,r);wire=()=>wireDetails(id,d,draw);}
+        else if(driveTab==="files"){const f=await api(`/api/companies/${id}/attachments`).catch(()=>[]);
+          body=filesTab(d,f);wire=()=>wireFiles(id,f,draw);}
         else if(driveTab==="rules"){const p=await api("/api/admin/policy").catch(()=>({}));
           body=rulesTab(d,p);wire=()=>wireRules(id,d,draw);}
         else if(driveTab==="downloads"){const m=await api("/api/export/columns");
@@ -982,6 +993,88 @@ function wireEmails(id){
     catch(e){toast(displayError(e));b.disabled=false;}};
 }
 
+/* Job description and anything that travels with it. Attached files go out
+   with the announcement email on publish and are downloadable by students
+   from the drive — so a file added after publishing has missed that email,
+   which is why the resend button appears once a drive is open. */
+const MAX_FILES=3;
+const FILE_KIND={jd:"Job description",form:"Form",brochure:"Brochure",other:"Other"};
+function fileSize(b){return b<1024?`${b} B`:b<1048576?`${Math.round(b/1024)} KB`:`${(b/1048576).toFixed(1)} MB`;}
+function filesTab(d,files){
+  const full=files.length>=MAX_FILES;
+  return `
+  <div class="card"><div class="ch"><h2>Job description and files</h2>
+    <span class="tag">${files.length} of ${MAX_FILES}</span>
+    ${isOfficer()?`<div class="rt"><button class="btn btn-p btn-s" id="addfile" type="button"
+      ${full?"disabled":""}>Attach a file</button></div>`:""}</div>
+    ${files.length?`<div class="list">${files.map(f=>`<div class="row"><div class="bd">
+      <div class="t">${esc(f.filename)}</div>
+      <div class="d">${esc(FILE_KIND[f.kind]||f.kind)} · ${fileSize(f.byte_size)} · added ${fmtDate(f.created_at)}</div></div>
+      <div class="rt"><button class="btn btn-s" data-fdl="${f.id}" type="button">Download</button>
+        ${isOfficer()?`<button class="btn btn-s" data-fdel="${f.id}" type="button">Remove</button>`:""}</div>
+      </div>`).join("")}</div>`
+    :`<div class="empty"><div class="t">No files attached</div>
+      <div>Attach the JD here. It goes out with the announcement email when you publish, and students can download it from the drive.</div></div>`}
+    <div class="tf"><span>${
+      full?`That's the limit of ${MAX_FILES}. Remove one to attach another.`
+      :`PDF, Word or image, up to 5 MB each.`}${
+      d.status===1&&files.length?" This drive is already published — files added now did not go out with the original announcement.":""}</span></div>
+  </div>
+  ${isOfficer()&&d.status===1?`<div class="card"><div class="ch"><h2>Announcement</h2></div>
+    <div class="list"><div class="row"><div class="bd">
+      <div class="t">Send the announcement again</div>
+      <div class="d">Use this if the first one failed, or if you attached the JD after publishing. It emails your student group with the files currently attached.</div></div>
+      <div class="rt"><button class="btn btn-s" id="resend" type="button">Resend</button></div></div></div>
+    </div>`:""}`;
+}
+function wireFiles(id,files,redraw){
+  const add=$("#addfile");
+  if(add&&!add.disabled)add.onclick=()=>modal("Attach a file",
+    `<label for="f-k">What is it?</label>
+     <select id="f-k"><option value="jd">Job description</option>
+       <option value="form">Form</option><option value="brochure">Brochure</option>
+       <option value="other">Other</option></select>
+     <label for="f-f">File</label>
+     <input id="f-f" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+     <p class="quiet" style="margin-top:8px">PDF, Word or image, up to 5 MB.
+       It will be attached to the announcement email and students can download it from the drive.</p>`,
+    async wrap=>{
+      const input=wrap.querySelector("#f-f");
+      const file=input.files&&input.files[0];
+      if(!file)throw new ApiError("Choose a file to attach.");
+      if(file.size>5*1024*1024)throw new ApiError(`${file.name} is ${fileSize(file.size)}. The limit is 5 MB.`);
+      const fd=new FormData();fd.append("file",file);
+      const r=await api(`/api/companies/${id}/attachments?kind=${encodeURIComponent(wrap.querySelector("#f-k").value)}`,
+        {method:"POST",body:fd});
+      toast(r.after_publish
+        ? "Attached — this drive is already published, so resend the announcement to send it out"
+        : `Attached · ${r.slots_left} slot${r.slots_left===1?"":"s"} left`);
+      redraw();
+    },"Attach");
+
+  $$("[data-fdl]").forEach(b=>b.onclick=()=>{
+    const f=files.find(x=>String(x.id)===b.dataset.fdl);
+    download(`/api/companies/${id}/attachments/${b.dataset.fdl}/download`,f?f.filename:"attachment");
+  });
+
+  $$("[data-fdel]").forEach(b=>b.onclick=async()=>{
+    const f=files.find(x=>String(x.id)===b.dataset.fdel);
+    if(!confirm(`Remove ${f?f.filename:"this file"} from the drive?`))return;
+    try{await api(`/api/companies/${id}/attachments/${b.dataset.fdel}`,{method:"DELETE"});
+      toast("Removed");redraw();}
+    catch(e){toast(displayError(e));}
+  });
+
+  const rs=$("#resend");
+  if(rs)rs.onclick=async()=>{
+    rs.disabled=true;
+    try{const r=await api(`/api/companies/${id}/resend-announcement`,{method:"POST"});
+      toast(`Sent to ${r.to}${r.attachments?` with ${r.attachments} file${r.attachments===1?"":"s"}`:""}`);
+      redraw();}
+    catch(e){toast(displayError(e));rs.disabled=false;}
+  };
+}
+
 /* ==========================================================================
    Students
    ========================================================================== */
@@ -1140,6 +1233,21 @@ async function PolicyView(){
    Planner — calendar, notes, reminders
    ========================================================================== */
 let plannerTab="calendar";
+/* The calendar used to request whichever month it happened to be, with no way
+   to move. A college whose drives are all in October opened this in September,
+   saw an empty card, and reasonably concluded the planner was broken. */
+let plannerMonth=null;                       // "YYYY-MM"; null = this month
+function monthShift(ym,delta){
+  const [y,m]=ym.split("-").map(Number);
+  const d=new Date(Date.UTC(y,m-1+delta,1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+}
+function monthLabel(ym){
+  const [y,m]=ym.split("-").map(Number);
+  return new Date(Date.UTC(y,m-1,1)).toLocaleDateString(undefined,
+    {month:"long",year:"numeric",timeZone:"UTC"});
+}
+function thisMonth(){return new Date().toISOString().slice(0,7);}
 async function PlannerView(){
   Shell(spinner,"#/planner");
   const render=async()=>{
@@ -1149,14 +1257,30 @@ async function PlannerView(){
       k=>{plannerTab=k;render();})+spinner);
     try{
       if(plannerTab==="calendar"){
-        const cal=await api("/api/calendar");
+        const want=plannerMonth||thisMonth();
+        const cal=await api(`/api/calendar?month=${encodeURIComponent(want)}`);
+        const month=cal.month||want;
         const KIND={deadline:"Last date",test:"Test",visit:"Visit",note:"Note",reminder:"Your reminder"};
+        const nav=`<div class="ch" style="gap:8px">
+          <button class="btn btn-s" id="mprev" type="button" aria-label="Previous month">←</button>
+          <h2 style="min-width:11ch;text-align:center">${esc(monthLabel(month))}</h2>
+          <button class="btn btn-s" id="mnext" type="button" aria-label="Next month">→</button>
+          ${month!==thisMonth()?`<div class="rt"><button class="btn btn-s" id="mnow" type="button">This month</button></div>`:""}
+        </div>`;
         setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
           k=>{plannerTab=k;render();})+
-          (cal.events.length?`<div class="card"><div class="ch"><h2>${esc(cal.month)}</h2></div><div class="list">
-            ${cal.events.map(e=>`<div class="row"><div class="bd"><div class="t">${esc(e.name)}</div>
-              <div class="d">${esc(KIND[e.kind]||e.kind)} · ${fmtDate(e.at)}</div></div></div>`).join("")}
-          </div></div>`:emptyCard("Nothing this month","Drive dates and test dates appear here as you add them.")));
+          `<div class="card">${nav}
+            ${cal.events.length?`<div class="list">
+              ${cal.events.map(e=>`<div class="row"><div class="bd"><div class="t">${esc(e.name)}</div>
+                <div class="d">${esc(KIND[e.kind]||e.kind)} · ${fmtDate(e.at)}</div></div></div>`).join("")}
+            </div>`
+            :`<div class="empty"><div class="t">Nothing in ${esc(monthLabel(month))}</div>
+              <div>Deadlines and test dates from your drives show up here automatically.
+                Use the arrows to check another month.</div></div>`}
+          </div>`);
+        $("#mprev").onclick=()=>{plannerMonth=monthShift(month,-1);render();};
+        $("#mnext").onclick=()=>{plannerMonth=monthShift(month,1);render();};
+        const now=$("#mnow");if(now)now.onclick=()=>{plannerMonth=null;render();};
       }else if(plannerTab==="notes"){
         const notes=await api("/api/admin/notes");
         setView(head+tabBar([["calendar","Calendar"],["notes","Notes"],["reminders","Reminders"]],plannerTab,
@@ -1351,19 +1475,65 @@ async function SettingsView(){
     const head=`<div class="head"><div><h1>Settings</h1>
       <div class="sub">Announcement addresses, class representatives, and what your college has unlocked.</div></div></div>`;
     const tabs=[["notify","Announcements"],["pro","Pro"]];
-    let body="";
+    let body="",wire=null;
     if(setTab==="notify"){
-      body=`<div class="card"><div class="ch"><h2>Where student announcements go</h2></div>
+      const G=await api("/api/notify-groups").catch(()=>({}));
+      const row=(key,g)=>{
+        const set=!!g.email, ok=!!g.verified;
+        return `<div class="row"><div class="bd">
+          <div class="t">${key==="juniors"?"Juniors group address":"Student group address"}
+            ${set?`<span class="tag ${ok?"ok":"pro"}">${ok?"confirmed":"not confirmed"}</span>`:""}</div>
+          <div class="d">${set?`<span class="n">${esc(g.email)}</span> · `:""}${
+            key==="students"
+              ? "Publishing a drive emails this group."
+              : "Used for drives open to juniors, such as summer internships."}
+            ${set&&!ok?" We won't send anything here until someone who receives mail at this address confirms it.":""}</div></div>
+          <div class="rt">
+            ${set&&!ok&&isOfficer()?`<button class="btn btn-s" data-verify="${key}" type="button">Send confirmation</button>`:""}
+            ${isOfficer()?`<button class="btn btn-s" data-setg="${key}" type="button">${set?"Change":"Set"}</button>`:""}
+          </div></div>`;
+      };
+      body=`<div class="card"><div class="ch"><h2>Where announcements go</h2>
+          ${isOfficer()?"":`<span class="tag">read only</span>`}</div>
         <div class="list">
-          <div class="row"><div class="bd"><div class="t">Student group address</div>
-            <div class="d">Publishing a drive emails this group. It must be a group on your own college domain, and we send it a confirmation link before it can be used.</div></div>
-            <div class="rt"><button class="btn btn-s" disabled type="button">Change</button></div></div>
+          ${row("students",G.students||{})}
+          ${row("juniors",G.juniors||{})}
           <div class="row off"><div class="bd"><div class="t">Personal details in group emails</div>
             <div class="d">Group lists are wider than they look. Announcements never contain names, marks or contact details — those go to the student directly.</div></div>
             <div class="rt"><span class="quiet">Never</span></div></div>
         </div>
-        <div class="tf"><span>Setting and verifying the group address is done by your platform contact during onboarding.</span></div>
+        <div class="tf"><span>${isOfficer()
+          ? "Only the placement officer can change these. Changing an address clears its confirmation, so it has to be confirmed again before anything is sent to it."
+          : "Only the placement officer can change these."}</span></div>
       </div>`;
+      wire=()=>{
+        $$("[data-setg]").forEach(b=>b.onclick=()=>{
+          const key=b.dataset.setg, cur=(G[key]||{}).email||"";
+          modal(key==="students"?"Student group address":"Juniors group address",
+            `<label for="g-e">Group email address</label>
+             <input id="g-e" type="email" value="${esc(cur)}" placeholder="placements-2027@yourcollege.ac.in">
+             <p class="quiet" style="margin-top:8px">Use a group or mailing list on your college domain, not a personal address.
+               We'll email it a confirmation link — nothing is announced to it until someone there confirms.</p>
+             ${cur?`<p class="quiet" style="margin-top:8px">Leave it empty to stop announcing to this group.</p>`:""}`,
+            async wrap=>{
+              const email=wrap.querySelector("#g-e").value.trim();
+              const r=await api("/api/notify-groups",{method:"PUT",
+                body:JSON.stringify({[key]:email})});
+              toast(email?(r.changed?"Address saved — now send the confirmation":"No change")
+                         :"Address cleared");
+              render();
+            },"Save");
+        });
+        $$("[data-verify]").forEach(b=>b.onclick=async()=>{
+          b.disabled=true;
+          try{
+            const r=await api(`/api/notify-groups/${b.dataset.verify}/send-verification`,{method:"POST"});
+            toast(r.already_verified?"Already confirmed"
+              :`Confirmation sent to ${r.email} — valid ${r.valid_hours} hours`);
+            render();
+          }catch(e){toast(displayError(e));b.disabled=false;}
+        });
+      };
     }else{
       const PRO=[["pool_placements","Pool placements","Drives run jointly with other colleges in the network"],
         ["test_sessions","Placement test sessions","Timed tests run with partner companies"],
@@ -1382,6 +1552,7 @@ async function SettingsView(){
       </div>`;
     }
     setView(head+tabBar(tabs,setTab,k=>{setTab=k;render();})+body);
+    if(wire)wire();
   };
   await render();
 }
