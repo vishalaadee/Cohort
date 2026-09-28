@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Guard against the failure mode that has hit this repo three times: a folder
+# copied over the working tree with an older or emptier snapshot.
+#
+#   1dc756e "code upload"  -> deleted 57 tracked files
+#   a7513d2 "add the files" -> portal.py 505 -> 23 lines, app.html 2011 -> 426
+#   (uncommitted)           -> app.html 1871 -> 788 lines
+#
+# The first is a deletion; the other two are modifications that gut a file, so
+# checking deletions alone would have missed two of the three.
+#
+# Intentional mass change:
+#     ALLOW_MASS_DELETE=1 git commit ...
+set -uo pipefail
+
+MAX_DELETED_FILES=5
+SHRINK_PCT=50          # flag a file keeping less than this share of its lines
+SHRINK_MIN_LINES=100   # ignore small files, where big swings are normal
+
+if [ "${ALLOW_MASS_DELETE:-0}" = "1" ]; then
+  echo "pre-commit: mass-change guard bypassed (ALLOW_MASS_DELETE=1)"
+  exit 0
+fi
+
+git rev-parse --verify HEAD >/dev/null 2>&1 || exit 0   # nothing to compare on first commit
+
+fail=0
+
+# -- rule 1: too many tracked files deleted at once -------------------------
+deleted=$(git diff --cached --name-only --diff-filter=D)
+ndel=$(printf '%s\n' "$deleted" | grep -c . || true)
+if [ "$ndel" -gt "$MAX_DELETED_FILES" ]; then
+  echo
+  echo "BLOCKED: this commit deletes $ndel tracked files (limit $MAX_DELETED_FILES)."
+  printf '%s\n' "$deleted" | head -40 | sed 's/^/    /'
+  [ "$ndel" -gt 40 ] && echo "    ... and $((ndel - 40)) more"
+  fail=1
+fi
+
+# -- rule 2: a tracked file losing most of its content ----------------------
+shrunk=""
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  old=$(git show "HEAD:$f" 2>/dev/null | wc -l | tr -d ' ')
+  [ -z "$old" ] && continue
+  [ "$old" -lt "$SHRINK_MIN_LINES" ] && continue
+  new=$(git show ":$f" 2>/dev/null | wc -l | tr -d ' ')
+  [ -z "$new" ] && continue
+  if [ "$new" -lt $(( old * SHRINK_PCT / 100 )) ]; then
+    shrunk="${shrunk}    ${f}: ${old} -> ${new} lines"$'\n'
+    fail=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=M)
+
+if [ -n "$shrunk" ]; then
+  echo
+  echo "BLOCKED: these tracked files lost more than ${SHRINK_PCT}% of their lines:"
+  printf '%s' "$shrunk"
+fi
+
+if [ "$fail" = "1" ]; then
+  cat <<'MSG'
+
+This is the signature of an older copy being pasted over the repo. Inspect the
+staged change before you proceed:
+
+    git diff --cached --stat
+    git diff --cached -- <the file above>
+
+If the change really is intended:
+
+    ALLOW_MASS_DELETE=1 git commit ...
+MSG
+  exit 1
+fi
+exit 0
