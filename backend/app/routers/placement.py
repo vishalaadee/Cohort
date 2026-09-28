@@ -214,8 +214,16 @@ def calendar(month: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"),
         notes = conn.execute(text("""
             SELECT n.id, n.title AS name, n.note_date::timestamptz AS at, n.kind
             FROM company_notes n
-            WHERE n.note_date >= :s::date AND n.note_date < :e::date
+            WHERE n.note_date >= CAST(:s AS date) AND n.note_date < CAST(:e AS date)
         """), params).mappings().all()
+        # CAST(:s AS date), not :s::date. SQLAlchemy finds bind parameters with
+        #     (?<![:\w$]):([\w$]+)(?![:\w$])
+        # and that trailing negative lookahead means a parameter immediately
+        # followed by ':' is not recognised at all. In ":s::date" the char after
+        # "s" is ":", so :s was never bound — the literal text ":s::date" went
+        # to Postgres, which rejected it, and the planner returned 500 for every
+        # month regardless of what was in it. The cast on note_date in the
+        # SELECT list is fine: it follows a column, not a parameter.
         mine = conn.execute(text("""
             SELECT id, title AS name, due_at AS at, 'reminder' AS kind
             FROM reminders WHERE due_at >= :s AND due_at < :e AND done_at IS NULL
@@ -765,6 +773,43 @@ def entitlements(claims: Claims = Depends(get_claims)):
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("SELECT feature, enabled FROM entitlements")).all()
     return {feature: enabled for feature, enabled in rows}
+
+
+# ===========================================================================
+# Branches — the real ones, for this college
+# ===========================================================================
+@router.get("/branches")
+def list_branches(claims: Claims = Depends(get_claims)):
+    """Every branch on this college's roster, with how many students are in it.
+
+    Exists so the eligibility editor can offer a list to tick instead of a
+    free-text box. Typing branch codes by hand is how a drive silently excludes
+    a whole department: "ISE" and "I.S.E." and "Ise" are three different
+    strings to a rule engine and one department to everyone else, and the
+    officer gets no error — just a shortlist that is quietly too short.
+
+    The count is not decoration. It is how an officer notices they are looking
+    at a branch code nobody is actually enrolled under.
+
+    Officer-only, and that matters for a reason that is not obvious. The RLS
+    policy on `branches` is college-scoped, but the one on `students` is
+    branch-scoped for sub_admin. A CR calling this would see every branch and a
+    count of zero for all but their own — and the count is documented above as
+    meaning "nobody is enrolled under this code". They would be reading a
+    permission boundary as a data-quality signal. The eligibility editor this
+    feeds is already officer-only (`isOfficer()` gates the tab), so nothing is
+    lost by matching that here.
+    """
+    require_placement_officer(claims)
+    with tenant_connection(claims) as conn:
+        rows = conn.execute(text("""
+            SELECT b.id, b.code, count(s.id) AS students
+              FROM branches b
+              LEFT JOIN students s ON s.branch_id = b.id
+             GROUP BY b.id, b.code
+             ORDER BY b.code
+        """)).mappings().all()
+    return [dict(r) for r in rows]
 
 
 # ===========================================================================

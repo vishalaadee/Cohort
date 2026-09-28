@@ -9,6 +9,27 @@ from ..db import tenant_connection
 router = APIRouter(prefix="/api/me", tags=["portal"])
 
 
+def _me(conn, claims: Claims) -> int:
+    """This caller's students.id, or 404.
+
+    Every student-owned query goes through this and filters on the result.
+    Several endpoints used to carry no WHERE clause at all and a comment saying
+    RLS would scope them to the caller — but the policies on questions,
+    edit_requests and applications are college-scoped, not user-scoped, so
+    "my questions" returned the whole college's. A comment is not a filter.
+    """
+    sid = conn.execute(text("SELECT id FROM students WHERE user_id = :u"),
+                       {"u": claims.user_id}).scalar()
+    if not sid:
+        raise HTTPException(404, "No roster record linked to this account")
+    return sid
+
+
+def _student_only(claims: Claims) -> None:
+    if claims.role != "student":
+        raise HTTPException(403, "Student account required")
+
+
 # =========================== drive attachments =============================
 # RLS lets a student read any drive_attachments row in their college, because
 # the row carries no secret. What decides whether they may see THIS one is
@@ -90,39 +111,63 @@ def my_drives(claims: Claims = Depends(get_claims)):
             "SELECT placement_policy FROM colleges WHERE id = :cid"
         ), {"cid": claims.college_id}).scalar() or {}
 
+        sid = _me(conn, claims)
+        # status = 1 keeps drafts hidden. The deadline check is new: an expired
+        # drive was still listed with a working-looking Apply button, and
+        # POST /register would then refuse it. A button that cannot succeed
+        # should not be offered.
         drives = conn.execute(text("""
-            SELECT id, name, category, package, deadline, status,
-                   min_cgpa, max_backlogs, eligible_branches, eligibility_rules
-            FROM companies WHERE status = 1 ORDER BY package DESC NULLS LAST
-        """)).mappings().all()
+            SELECT c.id, c.name, c.category, c.package, c.deadline, c.status,
+                   c.role_title, c.venue, c.test_date, c.restriction_note,
+                   c.min_cgpa, c.max_backlogs, c.eligible_branches, c.eligibility_rules,
+                   EXISTS (SELECT 1 FROM applications a
+                            WHERE a.company_id = c.id AND a.student_id = :sid) AS applied,
+                   EXISTS (SELECT 1 FROM drive_attachments da
+                            WHERE da.company_id = c.id) AS has_files
+            FROM companies c
+            WHERE c.status = 1
+              AND (c.deadline IS NULL OR c.deadline > now())
+            ORDER BY c.package DESC NULLS LAST
+        """), {"sid": sid}).mappings().all()
 
     out = []
     for d in drives:
+        applied = bool(d["applied"])
         pol_ok, pol_reason = check_policy(policy, offers,
                                           float(d["package"]) if d["package"] else None)
         rules = d["eligibility_rules"] or legacy_rules_from_columns(dict(d))
         rule_ok, rule_reasons = evaluate_rules(rules, student)
-        eligible = pol_ok and rule_ok
-        reasons = ([] if eligible else
+        # An applied-for drive is not "ineligible" — the student already got in.
+        # Reporting it as ineligible would show them a "why not" list for
+        # something they have already done.
+        eligible = (pol_ok and rule_ok) and not applied
+        reasons = ([] if (pol_ok and rule_ok) else
                    ([pol_reason] if not pol_ok else []) + rule_reasons)
         out.append({"id": d["id"], "name": d["name"], "category": d["category"],
                     "package": float(d["package"]) if d["package"] else None,
-                    "status": d["status"], "eligible": eligible, "reasons": reasons})
+                    "status": d["status"], "deadline": d["deadline"],
+                    "role_title": d["role_title"], "venue": d["venue"],
+                    "test_date": d["test_date"],
+                    "restriction_note": d["restriction_note"],
+                    "has_files": bool(d["has_files"]),
+                    "applied": applied,
+                    "eligible": eligible, "reasons": reasons})
     return out
 
 
 @router.get("/applications")
 def my_applications(claims: Claims = Depends(get_claims)):
-    if claims.role != "student":
-        raise HTTPException(403, "Student account required")
-    # RLS limits the rows to the student's own applications automatically.
+    """The caller's own applications. Filtered here, not left to RLS."""
+    _student_only(claims)
     with tenant_connection(claims) as conn:
+        sid = _me(conn, claims)
         rows = conn.execute(text("""
-            SELECT a.id, c.name AS company, c.category, c.package,
+            SELECT a.id, a.company_id, c.name AS company, c.category, c.package,
                    a.current_round, a.status, a.created_at
             FROM applications a JOIN companies c ON c.id = a.company_id
+            WHERE a.student_id = :sid
             ORDER BY a.created_at DESC
-        """)).mappings().all()
+        """), {"sid": sid}).mappings().all()
     return [dict(r) for r in rows]
 
 
@@ -207,6 +252,7 @@ async def upload_resume(file: UploadFile, claims: Claims = Depends(get_claims)):
 
 @router.get("/resume")
 def my_resume_meta(claims: Claims = Depends(get_claims)):
+    _student_only(claims)          # was missing; every other student route has it
     with tenant_connection(claims) as conn:
         r = conn.execute(text("""
             SELECT r.filename, r.updated_at, octet_length(r.data)/1024 AS size_kb
@@ -215,23 +261,63 @@ def my_resume_meta(claims: Claims = Depends(get_claims)):
     return dict(r) if r else None
 
 
+@router.get("/resume/download")
+def download_my_resume(claims: Claims = Depends(get_claims)):
+    """The student's own resume back.
+
+    There was no way to read it: a student could upload, but never confirm
+    what was actually stored. Since this file is what goes to companies,
+    "I think I uploaded the right one" is not good enough — they need to open
+    it. Scoped by user_id, so it can only ever return the caller's own.
+    """
+    _student_only(claims)
+    with tenant_connection(claims) as conn:
+        r = conn.execute(text("""
+            SELECT r.filename, r.mime, r.data
+            FROM resumes r JOIN students s ON s.id = r.student_id
+            WHERE s.user_id = :u"""), {"u": claims.user_id}).mappings().first()
+    if not r:
+        raise HTTPException(404, "You haven't uploaded a resume yet")
+    return Response(
+        content=r["data"], media_type=r["mime"] or "application/pdf",
+        headers={"Content-Disposition":
+                 f'inline; filename="{safe_filename(r["filename"], r["mime"], "resume")}"'})
+
+
 # =============================== profile ===================================
 @router.get("/profile")
 def my_profile(claims: Claims = Depends(get_claims)):
-    if claims.role != "student": raise HTTPException(403, "Student account required")
+    _student_only(claims)
     with tenant_connection(claims) as conn:
         p = conn.execute(text("""
-            SELECT s.roll_no, s.full_name, s.email, s.cgpa, s.backlogs,
+            SELECT s.id, s.roll_no, s.full_name, s.email, s.cgpa, s.backlogs,
                    b.code AS branch, s.verified, s.attributes,
                    (SELECT count(*) FROM applications a WHERE a.student_id=s.id) AS applications,
-                   (SELECT count(*) FROM offers o WHERE o.student_id=s.id) AS offers
+                   (SELECT count(*) FROM offers o WHERE o.student_id=s.id) AS offers,
+                   -- The app reads has_resume in three places (the to-do list,
+                   -- the profile card, the Apply gate) and it was never sent,
+                   -- so it was always undefined: the card said "Not uploaded"
+                   -- immediately after a successful upload.
+                   EXISTS (SELECT 1 FROM resumes r WHERE r.student_id=s.id) AS has_resume,
+                   (SELECT r.filename   FROM resumes r WHERE r.student_id=s.id) AS resume_filename,
+                   (SELECT r.updated_at FROM resumes r WHERE r.student_id=s.id) AS resume_updated_at,
+                   -- Feedback only opens once placed. The rule is enforced in
+                   -- POST /feedback; this is so the app can say so up front
+                   -- instead of letting a student write one and then 403.
+                   EXISTS (SELECT 1 FROM offers o WHERE o.student_id=s.id) AS placed
             FROM students s JOIN branches b ON b.id=s.branch_id
             WHERE s.user_id=:u"""), {"u": claims.user_id}).mappings().first()
+        if not p:
+            raise HTTPException(404, "No roster record linked")
+        # Was unfiltered: every student saw the whole college's correction
+        # requests, which carry names, marks and email addresses.
         reqs = conn.execute(text("""
             SELECT id, field, requested_value, status, created_at FROM edit_requests
-            ORDER BY created_at DESC LIMIT 10""")).mappings().all()
-    if not p: raise HTTPException(404, "No roster record linked")
-    return {"profile": dict(p), "edit_requests": [dict(r) for r in reqs]}
+            WHERE student_id = :sid
+            ORDER BY created_at DESC LIMIT 10"""), {"sid": p["id"]}).mappings().all()
+    profile = dict(p)
+    profile.pop("id", None)          # internal key, nothing client-side needs it
+    return {"profile": profile, "edit_requests": [dict(r) for r in reqs]}
 
 
 @router.post("/edit-request")
@@ -275,11 +361,27 @@ def post_question(payload: dict, claims: Claims = Depends(get_claims)):
 
 @router.get("/questions")
 def my_questions(claims: Claims = Depends(get_claims)):
-    # RLS shows: own questions + all answered ones (college-wide learning)
+    """Only the caller's own questions.
+
+    This previously had no WHERE clause and a comment claiming RLS showed
+    "own questions + all answered ones (college-wide learning)". The policy is
+    college-scoped, so what it actually showed was every student's questions to
+    every student — including things like "my cgpa is 8.7, why am I not
+    eligible", which is one student's marks on another student's screen.
+
+    Answered questions are not shared learning. A question is written by
+    someone describing their own situation, and they did not agree to publish
+    it. If a shared FAQ is wanted later, it should be written by the placement
+    cell, not harvested from student questions.
+    """
+    _student_only(claims)
     with tenant_connection(claims) as conn:
+        sid = _me(conn, claims)
         rows = conn.execute(text("""
             SELECT id, title, body, status, answer, created_at
-            FROM questions ORDER BY created_at DESC LIMIT 200""")).mappings().all()
+            FROM questions
+            WHERE student_id = :sid
+            ORDER BY created_at DESC LIMIT 200"""), {"sid": sid}).mappings().all()
     return [dict(r) for r in rows]
 
 
@@ -312,9 +414,18 @@ def submit_feedback(payload: dict, claims: Claims = Depends(get_claims)):
 
 @router.get("/feedback")
 def browse_feedback(claims: Claims = Depends(get_claims)):
-    """The interview-experience library. Readable by every student in the
-    college — this IS the 'junior login' of the old portal: juniors are
-    roster students, so they read seniors' experiences right here."""
+    """The interview-experience library. Readable college-wide BY DESIGN —
+    this is the 'junior login' of the old portal: juniors are roster students,
+    so they read seniors' experiences right here.
+
+    Deliberately unscoped, unlike /questions. The difference is consent: a
+    student writes an experience in order to publish it to their juniors,
+    having chosen what to put in it. A question is someone describing their own
+    problem to the placement cell. Note that no student identity is selected
+    here — company, role, CTC and advice only.
+    """
+    if claims.role not in ("student", "admin", "sub_admin", "owner"):
+        raise HTTPException(403, "Not available for this account")
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT f.id, c.name AS company, f.role, f.ctc, f.rounds,

@@ -230,6 +230,7 @@ let AUTH=JSON.parse(localStorage.getItem("cohort_auth")||"null");
 let CFG={google_client_id:null};
 let ENT={};                       // entitlements: {feature: bool}
 let BUCKETS=[];                   // college's buckets
+let BRANCHES=[];                  // college's real branch codes, from the roster
 const THEME_KEY="cohort_theme";
 
 function applyTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem(THEME_KEY,t);
@@ -427,7 +428,8 @@ function Shell(html,active){
       <span class="brand"><span class="mk"></span>Cohort</span>
       ${groups}
       <div class="rfoot">
-        <div class="who"><b>${esc(AUTH?.full_name||AUTH?.email||"Signed in")}</b>${esc(AUTH?.college_name||"")}</div>
+        <div class="who"><b>${esc(AUTH?.full_name||AUTH?.email||"Signed in")}</b>${
+          esc([AUTH?.roll_no,AUTH?.branch,AUTH?.college_name].filter(Boolean).join(" · "))}</div>
         <div class="row" style="padding:0 5px;border:0">
           <div class="tt"><button type="button" data-t="dark">Dark</button><button type="button" data-t="light">Light</button></div>
         </div>
@@ -859,32 +861,94 @@ function wireRules(id,d,redraw){
     list.splice(Number(b.dataset.del),1);
     try{await persist();toast("Condition removed");redraw();}catch(e){toast(displayError(e));}});
   const add=$("#addcond");
-  if(add)add.onclick=()=>{
+  if(add)add.onclick=async()=>{
+    // Branches come from the roster, so the officer ticks real codes instead
+    // of typing them. A typo here excludes a whole department with no error.
+    if(!BRANCHES.length)BRANCHES=await api("/api/branches").catch(()=>[]);
     const body=`
       <label for="c-field">Field</label>
       <select id="c-field"><option value="cgpa">CGPA</option><option value="backlogs">Backlogs</option>
         <option value="branch">Branch</option><option value="gender">Gender</option>
         <option value="tenth_pct">10th %</option><option value="twelfth_pct">12th %</option></select>
       <label for="c-op">Condition</label>
-      <select id="c-op"><option value="&gt;=">at least</option><option value="&lt;=">at most</option>
-        <option value="==">exactly</option><option value="in">one of</option></select>
-      <label for="c-val">Value</label>
-      <input id="c-val" placeholder="7.0 — or for “one of”: CSE, ISE, ECE">
+      <select id="c-op"></select>
+      <div id="c-valwrap"></div>
       <p class="quiet" style="margin-top:10px">A student who doesn't qualify is told exactly which condition they missed,
       in these words. Keep the wording something you'd be happy for them to read.</p>`;
     modal("Add a condition",body,async w=>{
       const field=w.querySelector("#c-field").value;
       const op=w.querySelector("#c-op").value;
-      const raw=w.querySelector("#c-val").value.trim();
-      if(!raw)throw new ApiError("Enter a value.");
       const LABELS={cgpa:"CGPA",backlogs:"Backlogs",branch:"Branch",gender:"Gender",
         tenth_pct:"10th %",twelfth_pct:"12th %"};
-      let value=raw;
-      if(op==="in")value=raw.split(",").map(s=>s.trim()).filter(Boolean);
-      else if(raw!==""&&!isNaN(Number(raw)))value=Number(raw);
+      let value;
+      if(field==="branch"){
+        value=[...w.querySelectorAll("[data-br]:checked")].map(c=>c.value);
+        if(!value.length)throw new ApiError("Tick at least one branch.");
+      }else{
+        const raw=w.querySelector("#c-val").value.trim();
+        if(!raw)throw new ApiError("Enter a value.");
+        if(op==="in"||op==="not_in")value=raw.split(",").map(s=>s.trim()).filter(Boolean);
+        else value=isNaN(Number(raw))?raw:Number(raw);
+      }
       list.push({field,op,value,label:LABELS[field]||field});
       await persist();toast("Condition added");redraw();
     },"Add");
+
+    /* The modal renders synchronously, so its controls can be wired now.
+       Field drives both the operator list and the value control: "at least"
+       makes no sense for a branch, and a text box makes no sense when we know
+       the exact set of valid answers. */
+    const fieldSel=document.querySelector("#c-field");
+    const opSel=document.querySelector("#c-op");
+    const wrap=document.querySelector("#c-valwrap");
+    const NUM_OPS=[[">=","at least"],["<=","at most"],["==","exactly"],["in","one of"]];
+    // not_in is confirmed in the engine (eligibility.py: "not_in": a not in b),
+    // so "not one of" is safe to offer — useful for "every branch except MBA".
+    const SET_OPS=[["in","one of"],["not_in","not one of"]];
+
+    const render=()=>{
+      const isBranch=fieldSel.value==="branch";
+      const ops=isBranch?SET_OPS:NUM_OPS;
+      opSel.innerHTML=ops.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
+
+      if(!isBranch){
+        wrap.innerHTML=`<label for="c-val">Value</label>
+          <input id="c-val" placeholder="${fieldSel.value==="gender"?"female — or for “one of”: female, male":"7.0"}">`;
+        return;
+      }
+      if(!BRANCHES.length){
+        wrap.innerHTML=`<label>Branches</label>
+          <p class="quiet">No branches found on your roster yet. Import students first,
+            or type codes separated by commas:</p>
+          <input id="c-val" placeholder="CSE, ISE, ECE">`;
+        return;
+      }
+      wrap.innerHTML=`<label>Branches</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-s" id="br-all" type="button">Select all</button>
+          <button class="btn btn-s" id="br-none" type="button">Clear</button>
+          <span class="quiet" id="br-count" style="align-self:center"></span>
+        </div>
+        <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);
+                    border-radius:8px;padding:8px">
+          ${BRANCHES.map(b=>`<label class="col" style="margin:0;display:flex;
+              align-items:center;gap:8px;padding:5px 4px">
+            <input type="checkbox" data-br value="${esc(b.code)}">
+            <span style="flex:1">${esc(b.code)}</span>
+            <span class="quiet">${b.students} student${b.students===1?"":"s"}</span>
+          </label>`).join("")}
+        </div>`;
+      const boxes=[...wrap.querySelectorAll("[data-br]")];
+      const count=wrap.querySelector("#br-count");
+      const tally=()=>{const n=boxes.filter(b=>b.checked).length;
+        count.textContent=n?`${n} selected`:"none selected";};
+      boxes.forEach(b=>b.onchange=tally);
+      wrap.querySelector("#br-all").onclick=()=>{boxes.forEach(b=>b.checked=true);tally();};
+      wrap.querySelector("#br-none").onclick=()=>{boxes.forEach(b=>b.checked=false);tally();};
+      tally();
+    };
+    fieldSel.onchange=render;
+    render();
   };
   const pv=$("#preview");
   if(pv)pv.onclick=async()=>{
@@ -1620,15 +1684,18 @@ async function StudentDrives(){
   try{
     if(!BUCKETS.length)BUCKETS=await api("/api/buckets").catch(()=>[]);
     const all=await api("/api/me/drives");
-    const open=all.filter(d=>d.status===1);
+    // The server already excludes drafts and anything past its deadline.
+    const open=all;
     const q=myQuery.trim().toLowerCase();
     const match=d=>(!q||`${d.name} ${bucketLabel(d.category)}`.toLowerCase().includes(q))
       &&(!myBucket||d.category===myBucket);
-    const eligible=open.filter(d=>d.eligible&&match(d));
-    const blocked=open.filter(d=>!d.eligible&&match(d));
+    const applied=open.filter(d=>d.applied&&match(d));
+    const eligible=open.filter(d=>d.eligible&&!d.applied&&match(d));
+    const blocked=open.filter(d=>!d.eligible&&!d.applied&&match(d));
     setView(`
     <div class="head"><div><h1>Drives</h1>
-      <div class="sub">${eligible.length} you can apply to, of ${open.length} open</div></div></div>
+      <div class="sub">${eligible.length} you can apply to, of ${open.length} open${
+        applied.length?` · ${applied.length} applied`:""}</div></div></div>
     <input class="search" id="mq" type="search" placeholder="Search by company name" value="${esc(myQuery)}">
     <div class="frow">
       <select id="mb" style="width:auto"><option value="">All buckets</option>
@@ -1636,13 +1703,25 @@ async function StudentDrives(){
       <label class="col" for="sb" style="margin-left:auto"><input type="checkbox" id="sb" ${showBlocked?"checked":""}>
         Also show drives I can't apply to (${blocked.length})</label>
     </div>
+    ${applied.length?`<div class="card"><div class="ch"><h2>You've applied</h2>
+      <span class="tag ok">${applied.length}</span></div>
+      <div class="list">${applied.map(d=>`<div class="row"><div class="bd">
+        <div class="t">${esc(d.name)} <span class="tag">${esc(bucketLabel(d.category))}</span></div>
+        <div class="d">${money(d.package)}${d.deadline?" · closes "+fmtDate(d.deadline):""}</div></div>
+        <div class="rt">${d.has_files?`<button class="btn btn-s" data-jd="${d.id}" type="button">JD</button>`:""}
+          <span class="tag ok">Applied</span></div></div>`).join("")}</div>
+    </div>`:""}
     <div class="card"><div class="ch"><h2>You can apply</h2><span class="tag ok">${eligible.length}</span></div>
       ${eligible.length?`<div class="list">${eligible.map(d=>`
         <div class="row"><div class="bd"><div class="t">${esc(d.name)} <span class="tag">${esc(bucketLabel(d.category))}</span></div>
-          <div class="d">${money(d.package)}</div></div>
-        <div class="rt"><button class="btn btn-p btn-s" data-reg="${d.id}" type="button">Apply</button></div></div>`).join("")}</div>`
+          <div class="d">${money(d.package)}${d.deadline?" · closes "+fmtDate(d.deadline):""}${
+            d.role_title?" · "+esc(d.role_title):""}</div>
+          ${d.restriction_note?`<div class="d">${esc(d.restriction_note)}</div>`:""}</div>
+        <div class="rt">${d.has_files?`<button class="btn btn-s" data-jd="${d.id}" type="button">JD</button>`:""}
+          <button class="btn btn-p btn-s" data-reg="${d.id}" type="button">Apply</button></div></div>`).join("")}</div>`
       :`<div class="empty"><div class="t">Nothing open for you right now</div>
-        <div>${blocked.length?"Tick the box above to see the drives you're not eligible for, and why.":"Check back when the next drive is published."}</div></div>`}
+        <div>${blocked.length?"Tick the box above to see the drives you're not eligible for, and why."
+          :applied.length?"You've applied to everything you're eligible for.":"Check back when the next drive is published."}</div></div>`}
     </div>
     ${showBlocked&&blocked.length?`<div class="card"><div class="ch"><h2>You can't apply</h2><span class="tag">${blocked.length}</span></div>
       <div class="list">${blocked.map(d=>`<div class="row"><div class="bd">
@@ -1661,7 +1740,19 @@ async function StudentDrives(){
       b.disabled=true;
       try{const r=await api(`/api/me/register/${b.dataset.reg}`,{method:"POST"});
         toast(`Applied to ${r.drive}`);StudentDrives();}
-      catch(e){toast(displayError(e));b.disabled=false;}});
+      catch(e){toast(displayError(e));
+        // Already applied, or it closed while the page was open — either way
+        // the list is stale, so refresh rather than re-enable a dead button.
+        if(e&&(e.status===409||e.status===400))StudentDrives();
+        else b.disabled=false;}});
+    // Students download the JD from the drive they're looking at.
+    $$("[data-jd]").forEach(b=>b.onclick=async()=>{
+      try{
+        const files=await api(`/api/me/drives/${b.dataset.jd}/attachments`);
+        if(!files.length)return toast("No files attached to this drive");
+        files.forEach(f=>download(
+          `/api/me/drives/${b.dataset.jd}/attachments/${f.id}/download`,f.filename));
+      }catch(e){toast(displayError(e));}});
   }catch(e){setView(errCard(e));}
 }
 
@@ -1669,11 +1760,21 @@ async function ExperiencesView(){
   Shell(spinner,"#/experiences");
   try{
     const rows=await api("/api/me/feedback");
+    // Writing an experience opens only once an offer is recorded — the server
+    // enforces it in POST /feedback. Asking the profile here means the button
+    // reflects that rule instead of appearing for everyone and 403-ing after
+    // the student has typed the whole thing out.
+    const isStudent=uiRole()==="student";
+    const placed=isStudent
+      ? !!((await api("/api/me/profile").catch(()=>({}))).profile||{}).placed
+      : false;
     const D=["","Easy","Easy","Medium","Hard","Very hard"];
     setView(`
     <div class="head"><div><h1>Interview experiences</h1>
       <div class="sub">${rows.length} written by students who sat these drives</div></div>
-      ${uiRole()==="student"?`<div class="rt"><button class="btn btn-p" id="addxp" type="button">Write yours</button></div>`:""}</div>
+      ${isStudent&&placed?`<div class="rt"><button class="btn btn-p" id="addxp" type="button">Write yours</button></div>`:""}</div>
+    ${isStudent&&!placed?`<div class="card"><div class="cb">
+      <p class="quiet">You'll be able to add your own experience here once your offer is recorded. Until then, read what seniors wrote.</p></div></div>`:""}
     ${rows.length?`<div class="card"><div class="list">${rows.map(f=>`
       <div class="row"><div class="bd">
         <div class="t">${esc(f.company)}${f.role?" · "+esc(f.role):""}
@@ -1685,10 +1786,13 @@ async function ExperiencesView(){
     if(add)add.onclick=async()=>{
       let apps=[];
       try{apps=await api("/api/me/applications");}catch{}
-      const placed=apps.filter(a=>a.status==="placed");
-      if(!placed.length)return toast("You can write an experience once an offer is recorded");
+      if(!apps.length)return toast("You can write an experience once an offer is recorded");
+      // Every drive they sat, not only ones whose application row says
+      // "placed" — the offer and the application status are recorded
+      // separately, and a student who is placed should still be able to write
+      // about the other companies they interviewed with.
       const body=`<label for="x-co">Which company?</label>
-        <select id="x-co">${placed.map(a=>`<option value="${a.id}" data-c="${esc(a.company)}">${esc(a.company)}</option>`).join("")}</select>
+        <select id="x-co">${apps.map(a=>`<option value="${a.id}">${esc(a.company)}</option>`).join("")}</select>
         <label for="x-role">Role</label><input id="x-role" placeholder="e.g. Software Engineer">
         <label for="x-rounds">Rounds you went through</label><input id="x-rounds" placeholder="OA + 2 tech + HR">
         <label for="x-diff">How hard was it?</label>
@@ -1714,9 +1818,16 @@ async function ExperiencesView(){
 async function ProfileView(){
   Shell(spinner,"#/profile");
   try{
-    const p=await api("/api/me/profile");
+    const res=await api("/api/me/profile");
+    // The endpoint returns {profile, edit_requests}. This read the top level
+    // directly, so every field was undefined and the page rendered blank —
+    // which is also why the resume card still said "Not uploaded" right after
+    // a successful upload.
+    const p=res.profile||{};
+    const reqs=res.edit_requests||[];
     const c=await api("/api/me/consent").catch(()=>({}));
     const consentOn=!!(c.consent_recruiter_share??c.consent??c.enabled??false);
+    const PEND={pending:"waiting on your officer",approved:"approved",rejected:"not approved"};
     setView(`
     <div class="head"><div><h1>My details</h1>
       <div class="sub">${esc(p.full_name||"")} · ${esc(p.roll_no||"")}${p.branch?" · "+esc(p.branch):""}</div></div></div>
@@ -1726,9 +1837,21 @@ async function ProfileView(){
       <div class="row"><div class="bd"><div class="t">Backlogs</div><div class="d">${p.backlogs??0}</div></div>
         <div class="rt"><button class="btn btn-s" data-fix="backlogs" type="button">Ask to correct</button></div></div>
       <div class="row"><div class="bd"><div class="t">Resume</div>
-        <div class="d">${p.has_resume?"On file":"Not uploaded — you can't apply to any drive without one"}</div></div>
-        <div class="rt"><button class="btn ${p.has_resume?"":"btn-p"} btn-s" id="upres" type="button">${p.has_resume?"Replace":"Upload"}</button></div></div>
-    </div></div>
+        <div class="d">${p.has_resume
+          ? `${esc(p.resume_filename||"On file")}${p.resume_updated_at?" · uploaded "+fmtDate(p.resume_updated_at):""}`
+          : "Not uploaded — you can't apply to any drive without one"}</div></div>
+        <div class="rt">
+          ${p.has_resume?`<button class="btn btn-s" id="viewres" type="button">View</button>`:""}
+          <button class="btn ${p.has_resume?"":"btn-p"} btn-s" id="upres" type="button">${p.has_resume?"Replace":"Upload"}</button></div></div>
+    </div>
+    ${p.has_resume?`<div class="tf"><span>This exact file is what companies receive when you apply. Open it and check it's the right one.</span></div>`:""}
+    </div>
+    ${reqs.length?`<div class="card"><div class="ch"><h2>Correction requests</h2></div>
+      <div class="list">${reqs.map(r=>`<div class="row"><div class="bd">
+        <div class="t">${esc(r.field)} → ${esc(r.requested_value)}</div>
+        <div class="d">${esc(PEND[r.status]||r.status)} · ${fmtDate(r.created_at)}</div></div>
+        <div class="rt"><span class="tag ${r.status==="approved"?"ok":r.status==="rejected"?"warn":""}">${esc(r.status)}</span></div>
+      </div>`).join("")}</div></div>`:""}
     <div class="card"><div class="ch"><h2>Who can see you</h2></div><div class="list">
       <div class="row"><div class="bd"><div class="t">Your college</div>
         <div class="d">Always sees your marks, applications and placement status</div></div>
@@ -1758,13 +1881,22 @@ async function ProfileView(){
         const f=input.files[0];if(!f)return;
         if(f.type!=="application/pdf")return toast("Upload a PDF");
         const fd=new FormData();fd.append("file",f);
-        try{await api("/api/me/resume",{method:"POST",body:fd});toast("Resume uploaded");ProfileView();}
-        catch(e){toast(displayError(e));}};
+        try{
+          const r=await api("/api/me/resume",{method:"POST",body:fd});
+          toast(`${r.filename||"Resume"} uploaded · ${r.size_kb} KB`);
+          ProfileView();
+        }catch(e){toast(displayError(e));}};
       input.click();};
+    const vr=$("#viewres");
+    if(vr)vr.onclick=()=>download("/api/me/resume/download",p.resume_filename||"resume.pdf");
     $("#cs").onchange=async e=>{
-      try{await api("/api/me/consent",{method:"POST",body:JSON.stringify({consent:e.target.checked})});
-        toast(e.target.checked?"Recruiters outside your college can now find you":"Turned off");}
-      catch(err){toast(displayError(err));e.target.checked=!e.target.checked;}};
+      const on=e.target.checked;
+      try{
+        // The API field is `share`. This sent `consent`, so the server read
+        // None, stored false, and turning the switch ON silently saved OFF.
+        await api("/api/me/consent",{method:"POST",body:JSON.stringify({share:on})});
+        toast(on?"Recruiters outside your college can now find you":"Turned off");
+      }catch(err){toast(displayError(err));e.target.checked=!on;}};
   }catch(e){setView(errCard(e));}
 }
 
@@ -1842,6 +1974,14 @@ async function enterApp(){
   if(AUTH&&["student","alumni"].includes(AUTH.role)){
     try{const ctx=await api("/api/me/context");AUTH.is_final_year=ctx.is_final_year;}
     catch{AUTH.is_final_year=true;}
+    // The sign-in payload carries no name or roll number, so the sidebar just
+    // said "Signed in". A student's roll number is how they identify
+    // themselves to the placement office — show it.
+    try{
+      const p=(await api("/api/me/profile")).profile||{};
+      AUTH.roll_no=p.roll_no; AUTH.branch=p.branch;
+      if(p.full_name)AUTH.full_name=p.full_name;
+    }catch{/* profile is optional decoration here */}
   }
   applyRole();
   try{ENT=await api("/api/entitlements");}catch{ENT={};}
