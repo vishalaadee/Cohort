@@ -409,8 +409,8 @@ function LoginView(){
 const NAV={
   admin:[["Work",[["#/today","Today"],["#/drives","Drives"],["#/students","Students"]]],
          ["Configure",[["#/policy","Policy & buckets"],["#/planner","Planner"],["#/settings","Settings"]]],
-         ["Insight",[["#/analytics","Analytics"],["#/inbox","Questions & requests"]]]],
-  cr:[["My branch",[["#/today","Branch summary"],["#/drives","Drive pipeline"],["#/students","Students"]]],
+         ["Insight",[["#/analytics","Analytics"],["#/outcomes","Outcomes"],["#/reporting","Accreditation"],["#/inbox","Questions & requests"]]]],
+  cr:[["My branch",[["#/today","Branch summary"],["#/drives","Drive pipeline"],["#/students","Students"],["#/outcomes","Outcomes"]]],
       ["Support",[["#/inbox","Questions"],["#/juniors","Juniors"]]]],
   student:[["Placements",[["#/home","Home"],["#/drives","Drives"],["#/experiences","Experiences"]]],
            ["You",[["#/profile","My details"],["#/qa","Ask a question"],["#/premium","Premium"]]]],
@@ -1946,12 +1946,323 @@ function PremiumView(){
 /* ==========================================================================
    Router
    ========================================================================== */
+/* ==========================================================================
+   OUTCOMES + ACCREDITATION REPORTING
+
+   Two screens that turn the placement season into something a college can
+   actually file:
+
+     #/outcomes    where every final-year student ended up, and — more to the
+                   point — who is still unaccounted for.
+     #/reporting   the same rows, answered three different ways, because NAAC,
+                   NBA and NIRF do not agree on what "placed" means.
+
+   The chase list is the important half. A college's placement rate is only as
+   honest as the share of the batch it actually knows about, so "47 students
+   have no recorded outcome" is a more useful number to show an officer than
+   any percentage computed without them.
+   ========================================================================== */
+
+/* Officers can do everything. A CR can only do what has been granted, and
+   `permissions` comes back on the login response already normalised by the
+   server. This is for HIDING things the caller cannot use — the backend still
+   enforces every one of them, per the rule that the frontend is never the
+   permission boundary. */
+function can(cap){
+  if(!AUTH) return false;
+  if(["owner","admin"].includes(AUTH.role)) return true;
+  /* An old session predating this field must not lose access: unknown means
+     show it and let the server refuse, never hide something already granted. */
+  if(!Array.isArray(AUTH.permissions)) return true;
+  return AUTH.permissions.includes(cap);
+}
+
+const OUTCOME_KINDS=[
+  ["placed_campus",   "Placed — campus drive"],
+  ["placed_offcampus","Placed — off campus"],
+  ["higher_studies",  "Higher studies"],
+  ["entrepreneurship","Started a venture"],
+  ["competitive_exam","Cleared a competitive exam"],
+  ["not_placed",      "Not placed yet"],
+  ["unavailable",     "Not seeking placement"],
+];
+const KIND_LABEL=Object.fromEntries(OUTCOME_KINDS);
+const KIND_TAG={placed_campus:"ok",placed_offcampus:"ok",higher_studies:"ok",
+  entrepreneurship:"ok",competitive_exam:"",not_placed:"warn",unavailable:""};
+
+let outcomeTab="chase";
+let outcomeBatch="";
+
+/* money() already exists in this file as ₹x.x LPA — the convention used
+   everywhere else here, and the way Indian placement packages are actually
+   quoted. Reusing it rather than defining a second one. */
+
+/* ------------------------------------------------------------------ chase */
+async function OutcomesView(){
+  Shell(spinner,"#/outcomes");
+  try{
+    const tabs=tabBar([["chase","Still to record"],["done","Recorded"]],outcomeTab,t=>{
+      outcomeTab=t;OutcomesView();
+    });
+
+    if(outcomeTab==="chase"){
+      const r=await api("/api/outcomes?unrecorded=true"+(outcomeBatch?`&batch_year=${encodeURIComponent(outcomeBatch)}`:""));
+      const rows=r.unrecorded||[];
+      setView(`
+      <div class="head"><div><h1>Outcomes</h1>
+        <div class="quiet">${rows.length} final-year student${rows.length===1?"":"s"} with nothing on record.
+          Every one of them drags your reported placement rate down, because they sit in the
+          denominator and not the numerator.</div></div></div>
+      ${tabs}
+      <div class="card">
+        ${rows.length?`<div class="tw"><table>
+          <thead><tr><th>Name</th><th>Roll</th><th>Branch</th><th>Batch</th><th></th></tr></thead>
+          <tbody>${rows.map(s=>`<tr>
+            <td>${esc(s.full_name||"—")}</td>
+            <td class="mono">${esc(s.roll_no||"—")}</td>
+            <td>${esc(s.branch||"—")}</td>
+            <td class="mono">${s.batch_year??"—"}</td>
+            <td><button class="btn btn-s" type="button" data-rec="${s.student_id}"
+                  data-name="${esc(s.full_name||s.roll_no||"")}">Record</button></td>
+          </tr>`).join("")}</tbody></table></div>`
+        :`<div class="empty"><div class="t">Everyone is accounted for</div>
+            <div>Every final-year student has a recorded outcome. That is what a
+            submittable dataset looks like.</div></div>`}
+      </div>`);
+      document.querySelectorAll("[data-rec]").forEach(b=>{
+        b.onclick=()=>outcomeModal(Number(b.dataset.rec),b.dataset.name);
+      });
+      return;
+    }
+
+    /* ---------------------------------------------------------- recorded */
+    const rows=await api("/api/outcomes"+(outcomeBatch?`?batch_year=${encodeURIComponent(outcomeBatch)}`:""));
+    const unverified=rows.filter(o=>!o.verified).length;
+    setView(`
+    <div class="head"><div><h1>Outcomes</h1>
+      <div class="quiet">${rows.length} recorded${unverified?` · <b>${unverified}</b> not yet verified`:""}.
+        An unverified outcome is a claim; an assessor is relying on the verified ones.</div></div></div>
+    ${tabs}
+    <div class="card">
+      ${rows.length?`<div class="tw"><table>
+        <thead><tr><th>Student</th><th>Branch</th><th>Outcome</th><th>Detail</th>
+          <th>Package</th><th>Proof</th><th>Status</th><th></th></tr></thead>
+        <tbody>${rows.map(o=>{
+          const detail = o.kind==="higher_studies"   ? [o.institution_name,o.program_name].filter(Boolean).join(" · ")
+                       : o.kind==="competitive_exam" ? (o.exam_name||"")
+                       : o.kind==="entrepreneurship" ? (o.venture_name||"")
+                       : [o.employer_name,o.role_title].filter(Boolean).join(" · ");
+          return `<tr>
+            <td>${esc(o.full_name||"—")}<div class="quiet mono">${esc(o.roll_no||"")}</div></td>
+            <td>${esc(o.branch||"—")}</td>
+            <td><span class="tag ${KIND_TAG[o.kind]||""}">${esc(KIND_LABEL[o.kind]||o.kind)}</span>
+                ${o.is_primary?"":'<div class="quiet">additional</div>'}</td>
+            <td>${esc(detail||"—")}</td>
+            <td class="mono">${o.kind.startsWith("placed")?money(o.annual_ctc):"—"}</td>
+            <td class="mono">${o.documents?`${o.documents} file${o.documents===1?"":"s"}`:'<span class="quiet">none</span>'}</td>
+            <td>${o.verified?'<span class="tag ok">verified</span>'
+                            :'<span class="tag warn">unverified</span>'}</td>
+            <td>
+              ${can("collect_outcomes")?`<button class="btn btn-s" type="button" data-doc="${o.id}">Proof</button>`:""}
+              ${(!o.verified&&isOfficer())?`<button class="btn btn-s" type="button" data-ver="${o.id}">Verify</button>`:""}
+            </td></tr>`;}).join("")}</tbody></table></div>`
+      :`<div class="empty"><div class="t">Nothing recorded yet</div>
+          <div>Start from the “Still to record” tab.</div></div>`}
+    </div>`);
+    document.querySelectorAll("[data-ver]").forEach(b=>{
+      b.onclick=async()=>{
+        b.disabled=true;
+        try{await api(`/api/outcomes/${b.dataset.ver}/verify`,{method:"PATCH"});
+          toast("Verified");OutcomesView();}
+        catch(e){toast(displayError(e));b.disabled=false;}
+      };
+    });
+    document.querySelectorAll("[data-doc]").forEach(b=>{
+      b.onclick=()=>proofModal(Number(b.dataset.doc));
+    });
+  }catch(e){setView(errCard(e));}
+}
+
+/* ------------------------------------------------------------ record one */
+function outcomeModal(studentId,name){
+  const opts=OUTCOME_KINDS.map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("");
+  const body=`
+    <p class="quiet">Recording an outcome for <b>${esc(name)}</b>. It is saved as
+      <b>unverified</b> — only the placement officer can sign it off as evidence.</p>
+    <label for="o-kind">What happened</label>
+    <select id="o-kind">${opts}</select>
+
+    <div data-grp="placed_campus placed_offcampus">
+      <label for="o-emp">Employer</label><input id="o-emp" placeholder="Company name">
+      <label for="o-role">Role</label><input id="o-role" placeholder="e.g. Systems Engineer">
+      <label for="o-ctc">Annual CTC (₹)</label>
+      <input id="o-ctc" type="number" min="0" step="1000" placeholder="e.g. 450000">
+      <p class="quiet">NIRF asks for the <b>median salary</b> of graduates, so this is the
+        figure actually offered — not the package advertised on the drive.</p>
+    </div>
+
+    <div data-grp="higher_studies">
+      <label for="o-inst">Institution</label><input id="o-inst" placeholder="e.g. IIT Bombay">
+      <label for="o-prog">Programme</label><input id="o-prog" placeholder="e.g. M.Tech CSE">
+      <p class="quiet">NAAC 5.2.2 wants proof of continuation per student — attach the
+        admission letter once this is saved.</p>
+    </div>
+
+    <div data-grp="competitive_exam">
+      <label for="o-exam">Exam</label><input id="o-exam" placeholder="e.g. GATE, NET, UPSC">
+      <label for="o-score">Score or rank</label><input id="o-score" placeholder="optional">
+      <p class="quiet">Recorded alongside a student's main outcome, not instead of it —
+        a placed student who cleared GATE counts under both NAAC 5.2.1 and 5.2.3.</p>
+    </div>
+
+    <div data-grp="entrepreneurship">
+      <label for="o-ven">Venture name</label><input id="o-ven" placeholder="Company or firm">
+      <label for="o-vreg">Registration number</label><input id="o-vreg" placeholder="optional">
+    </div>
+
+    <label for="o-notes">Notes</label>
+    <input id="o-notes" placeholder="optional — anything worth remembering">`;
+
+  const wrap=modal(`Record outcome`,body,async w=>{
+    const kind=w.querySelector("#o-kind").value;
+    const val=id=>{const el=w.querySelector(id);return el&&el.value.trim()?el.value.trim():null;};
+    const payload={student_id:studentId,kind,notes:val("#o-notes")};
+    if(kind.startsWith("placed")){
+      payload.employer_name=val("#o-emp");
+      payload.role_title=val("#o-role");
+      payload.annual_ctc=val("#o-ctc")?Number(val("#o-ctc")):null;
+    }else if(kind==="higher_studies"){
+      payload.institution_name=val("#o-inst");payload.program_name=val("#o-prog");
+    }else if(kind==="competitive_exam"){
+      payload.exam_name=val("#o-exam");payload.exam_score=val("#o-score");
+    }else if(kind==="entrepreneurship"){
+      payload.venture_name=val("#o-ven");payload.venture_reg_no=val("#o-vreg");
+    }
+    const r=await api("/api/outcomes",{method:"POST",body:JSON.stringify(payload)});
+    toast("Recorded — not yet verified");
+    OutcomesView();
+    if(["higher_studies","competitive_exam","placed_offcampus","entrepreneurship"].includes(kind)){
+      /* These are exactly the outcomes an assessor asks to see evidence for,
+         and the moment someone has the detail to hand is the moment they have
+         the document to hand. */
+      setTimeout(()=>proofModal(r.id,true),350);
+    }
+  },"Record");
+
+  /* show only the fields that belong to the selected kind */
+  const sel=wrap.querySelector("#o-kind");
+  const sync=()=>wrap.querySelectorAll("[data-grp]").forEach(g=>{
+    g.style.display=g.dataset.grp.split(" ").includes(sel.value)?"":"none";
+  });
+  sel.onchange=sync;sync();
+}
+
+/* -------------------------------------------------------------- evidence */
+function proofModal(outcomeId,prompted){
+  const body=`
+    ${prompted?`<p class="quiet">Attach the evidence now while you have it —
+      an aggregate count with no document behind it is not submittable.</p>`:""}
+    <label for="p-kind">Document type</label>
+    <select id="p-kind">
+      <option value="offer_letter">Offer letter</option>
+      <option value="admission_letter">Admission letter</option>
+      <option value="certificate">Certificate</option>
+      <option value="registration">Registration document</option>
+      <option value="proof">Other proof</option>
+    </select>
+    <label for="p-file">File</label>
+    <input id="p-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+    <p class="quiet">Up to 5 MB.</p>`;
+  modal("Attach proof",body,async w=>{
+    const input=w.querySelector("#p-file");
+    const file=input.files&&input.files[0];
+    if(!file)throw new ApiError("Choose a file to attach.");
+    if(file.size>5*1024*1024)
+      throw new ApiError(`${file.name} is ${fileSize(file.size)}. The limit is 5 MB.`);
+    const fd=new FormData();fd.append("file",file);
+    await api(`/api/outcomes/${outcomeId}/documents?kind=${encodeURIComponent(w.querySelector("#p-kind").value)}`,
+      {method:"POST",body:fd});
+    toast("Proof attached");
+    if(outcomeTab==="done")OutcomesView();
+  },"Attach");
+}
+
+/* -------------------------------------------------------- reconciliation */
+async function ReportingView(){
+  Shell(spinner,"#/reporting");
+  try{
+    const r=await api("/api/reports/reconciliation"+(outcomeBatch?`?batch_year=${encodeURIComponent(outcomeBatch)}`:""));
+    const c=r.counts,q=r.data_quality,n=r.naac;
+    const row=(label,value,note)=>`<tr><td>${label}</td>
+      <td class="mono"><b>${value}</b></td><td class="quiet">${note}</td></tr>`;
+
+    setView(`
+    <div class="head"><div><h1>Accreditation</h1>
+      <div class="quiet">Batch ${r.batch_year??"—"} · ${c.final_year_students} final-year students.
+        One dataset, three regulators, three different correct answers.</div></div></div>
+
+    ${q.complete?"":`<div class="card"><div class="empty">
+      <div class="t">${q.unrecorded} student${q.unrecorded===1?"":"s"} have no recorded outcome</div>
+      <div>Coverage is ${q.coverage_pct}%. Every figure below understates this college
+        until those are recorded — they count in the denominator and nowhere else.
+        <a href="#/outcomes">Record them</a>.</div></div></div>`}
+
+    <div class="card">
+      <div class="tw"><table>
+        <thead><tr><th>Measure</th><th>Value</th><th>How it is defined</th></tr></thead>
+        <tbody>
+          ${row("Placement rate, plainly",`${r.plain_placement_rate}%`,
+                "placed students ÷ final-year students — the number people say out loud")}
+          ${row("NAAC 5.2.1",`${n["5.2.1"].percentage}%`,
+                `placed ÷ (final-year − higher studies) · score ${n["5.2.1"].score}/4`)}
+          ${row("NAAC 5.2.2",`${n["5.2.2"].percentage}%`,
+                `higher studies ÷ final-year · score ${n["5.2.2"].score}/4`)}
+          ${row("NAAC 5.2.3",`${n["5.2.3"].percentage}%`,
+                "cleared a competitive exam ÷ final-year")}
+          ${row("NBA 4.6",`${r.nba.placement_index}%`,
+                "(placed + higher studies + ventures) ÷ final-year")}
+          ${row("NIRF — placed",`${r.nirf.placed_pct}%`,"reported separately from higher studies")}
+          ${row("NIRF — higher studies",`${r.nirf.higher_studies_pct}%`,"three-year average at submission")}
+          ${row("NIRF — median salary",money(r.nirf.median_salary),
+                `median of ${r.nirf.salary_n} recorded package${r.nirf.salary_n===1?"":"s"}`)}
+        </tbody></table></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><div><h2>Why they differ</h2></div></div>
+      <ul class="quiet">${r.why_they_differ.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>
+      <p class="quiet">This is the reconciliation a placement cell otherwise does by hand,
+        three times, with a calculator — and can never quite prove.</p>
+    </div>
+
+    <div class="card">
+      <div class="head"><div><h2>The batch</h2></div></div>
+      <div class="tw"><table>
+        <thead><tr><th>Outcome</th><th>Students</th></tr></thead>
+        <tbody>
+          <tr><td>Placed</td><td class="mono">${c.placed}</td></tr>
+          <tr><td>Higher studies</td><td class="mono">${c.higher_studies}</td></tr>
+          <tr><td>Started a venture</td><td class="mono">${c.entrepreneurship}</td></tr>
+          <tr><td>Cleared a competitive exam</td><td class="mono">${c.exam_qualified}</td></tr>
+          <tr><td>Not placed</td><td class="mono">${c.not_placed}</td></tr>
+          <tr><td>Not seeking placement</td><td class="mono">${c.unavailable}</td></tr>
+          <tr><td><b>No outcome recorded</b></td><td class="mono"><b>${c.unrecorded}</b></td></tr>
+        </tbody></table></div>
+      ${(c.higher_studies===0&&c.final_year_students>0)?`<p class="quiet">
+        Higher studies is zero. That is far more often missing data than a batch where
+        nobody went on to study — and all three frameworks count it, so leaving it blank
+        reports this college as worse than it is.</p>`:""}
+    </div>`);
+  }catch(e){setView(errCard(e));}
+}
+
 const ROUTES={
   "#/login":LoginView,
   "#/today":TodayView,"#/drives":()=>isStaff()?DrivesView():StudentDrives(),
   "#/students":StudentsView,"#/policy":PolicyView,"#/planner":PlannerView,
   "#/analytics":AnalyticsView,"#/inbox":InboxView,"#/settings":SettingsView,
   "#/juniors":JuniorsView,
+  "#/outcomes":OutcomesView,"#/reporting":ReportingView,
   "#/home":StudentHome,"#/experiences":ExperiencesView,"#/profile":ProfileView,
   "#/qa":QAView,"#/premium":PremiumView,
 };
