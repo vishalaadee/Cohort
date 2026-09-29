@@ -20,6 +20,25 @@ services:
       JWT_ALG: ${JWT_ALG}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       DEV_FALLBACK: ${DEV_FALLBACK}
+
+      # --- outbound mail ---------------------------------------------------
+      # These were hand-edited on the EC2 host and never committed, so any
+      # clean redeploy (new instance, fresh clone, rebuild from git) silently
+      # lost them and drive announcements stopped sending with no error.
+      #
+      # Defaults are deliberate. With SMTP_HOST empty, mailer.is_configured()
+      # returns False and the app simply does not send — it still starts, and
+      # publishing a drive succeeds with the announcement skipped rather than
+      # the request failing. Fill these in .env to turn mail on.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Cohort}"
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_SSL: ${SMTP_SSL:-false}
+      SMTP_TIMEOUT: ${SMTP_TIMEOUT:-20}
     expose:
       - "8000"
 
