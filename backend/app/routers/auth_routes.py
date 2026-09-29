@@ -23,7 +23,9 @@ from ..auth import Claims, get_claims
 from ..config import settings
 from ..db import tenant_connection
 from ..permissions import normalize_cr_permissions
-from ..security import create_token, hash_password, login_limiter, verify_password
+from ..security import (burn_password_time, claim_flood_limiter, claim_limiter,
+                        client_ip, create_token, hash_password, login_limiter,
+                        verify_password)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -119,7 +121,11 @@ class LoginIn(BaseModel):
 
 @router.post("/login")
 def login_with_password(body: LoginIn, request: Request):
-    key = f"login:{(request.client.host if request.client else '?')}:{body.email.lower()}"
+    # Keyed on (ip, email). Behind Caddy the ip component is now the real
+    # client because uvicorn runs with --proxy-headers; before that fix every
+    # caller shared one bucket. The email component is what actually bounds a
+    # brute force, since an attacker can rotate addresses but not the target.
+    key = f"login:{client_ip(request)}:{body.email.lower()}"
     if not login_limiter.allow(key):
         raise HTTPException(429, "Too many attempts. Try again in a few minutes.")
 
@@ -127,7 +133,16 @@ def login_with_password(body: LoginIn, request: Request):
         u = conn.execute(text(
             "SELECT id, password_hash FROM users WHERE lower(email) = :e"
         ), {"e": body.email.lower()}).mappings().first()
-        if not u or not verify_password(body.password, u["password_hash"]):
+
+        if not u:
+            # Spend the same ~250ms a real bcrypt check costs. Returning early
+            # here is what made account existence measurable over the network.
+            burn_password_time()
+            raise HTTPException(401, "Email or password is incorrect")
+        if not verify_password(body.password, u["password_hash"]):
+            # Covers both a wrong password and a Google-only account whose
+            # password_hash is NULL; verify_password returns False for NULL
+            # rather than raising, and the message must not distinguish them.
             raise HTTPException(401, "Email or password is incorrect")
 
         # role resolution: membership first, else linked student
@@ -160,9 +175,20 @@ class ClaimIn(BaseModel):
 @router.post("/claim")
 def claim_account(body: ClaimIn, request: Request):
     """For colleges without Google accounts: a student turns their roster row
-    into a login using the activation code their placement cell gave them."""
-    key = f"claim:{(request.client.host if request.client else '?')}"
-    if not login_limiter.allow(key):
+    into a login using the activation code their placement cell gave them.
+
+    Rate limiting here used to be keyed on the client IP alone, which behind
+    Caddy meant ONE global bucket of 10 attempts per 5 minutes for the entire
+    platform. On a college's first day, student eleven onwards would be told
+    "too many attempts" — an onboarding outage, not just a security gap.
+
+    Now: a tight per-identity bucket (which is what actually stops guessing at
+    a specific student's code) plus a deliberately loose per-IP flood guard.
+    """
+    identity = f"claim:{body.college_slug.lower()}:{body.roll_no.upper()}"
+    if not claim_limiter.allow(identity):
+        raise HTTPException(429, "Too many attempts for this roll number. Try again later, or ask your placement cell to reissue the code.")
+    if not claim_flood_limiter.allow(f"claimip:{client_ip(request)}"):
         raise HTTPException(429, "Too many attempts. Try again in a few minutes.")
 
     with tenant_connection(SYSTEM) as conn:
@@ -174,7 +200,7 @@ def claim_account(body: ClaimIn, request: Request):
         """), {"slug": body.college_slug.lower(), "roll": body.roll_no}).mappings().first()
 
         if not st or not st["activation_code"] \
-           or st["activation_code"].upper() != body.activation_code.upper():
+           or not _codes_match(st["activation_code"], body.activation_code):
             # one message for all failure shapes — don't leak which part matched
             raise HTTPException(403, "Details don't match. Check your college code, roll number and activation code.")
         if st["user_id"]:
@@ -200,18 +226,32 @@ def claim_account(body: ClaimIn, request: Request):
         return _token_response(conn, uid, "student", st["college_id"], st["branch_id"])
 
 
+def _codes_match(stored: str, supplied: str) -> bool:
+    """Constant-time compare. An activation code is a bearer credential — it
+    is the single factor that turns a roster row into an account — so it gets
+    the same treatment as a password, not a plain `!=`."""
+    import hmac
+    return hmac.compare_digest(stored.strip().upper(), supplied.strip().upper())
+
+
 # --------------------------------------------------------------------- misc
 @router.get("/config")
 def auth_config():
-    """Frontend bootstrap: which sign-in methods to render."""
-    return {"google_client_id": settings.google_client_id,
-            "dev_fallback": settings.dev_fallback}
+    """Frontend bootstrap: which sign-in methods to render.
+
+    Deliberately narrow. This endpoint is unauthenticated, so it returns only
+    what the login screen needs to draw itself. It used to also report the
+    dev_fallback flag, which told an anonymous caller whether the
+    authentication bypass was available — that flag is gone entirely now.
+    """
+    return {"google_client_id": settings.google_client_id}
 
 
 @router.get("/me")
 def me(claims: Claims = Depends(get_claims)):
-    if not claims.user_id and not settings.dev_fallback:
-        raise HTTPException(401, "Not signed in")
+    # get_claims now raises 401 on a missing or invalid token, so reaching
+    # this line means a verified token. The previous `if not claims.user_id
+    # and not settings.dev_fallback` guard is redundant and is removed.
     with tenant_connection(SYSTEM) as conn:
         u = None
         if claims.user_id:

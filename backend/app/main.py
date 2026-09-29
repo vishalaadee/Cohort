@@ -13,7 +13,7 @@ from .db import engine, schema_is_current
 from .errors import (database_exception_handler, http_exception_handler,
                      unhandled_exception_handler, validation_exception_handler)
 from .routers import (admin_extra, auth_routes, companies, dashboard, placement,
-                      portal, students_admin)
+                      portal, reports, students_admin)
 
 app = FastAPI(title="Placement Platform API", version="0.2.0")
 logger = logging.getLogger("cohort.api")
@@ -41,6 +41,7 @@ app.include_router(students_admin.router)
 app.include_router(portal.router)
 app.include_router(admin_extra.router)
 app.include_router(placement.router)      # buckets, reminders, exports, publish
+app.include_router(reports.router)        # NAAC / NBA / NIRF + outcome capture
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)

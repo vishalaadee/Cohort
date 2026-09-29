@@ -23,39 +23,45 @@ def _int_or_none(v):
 
 def get_claims(
     authorization: str | None = Header(default=None),
-    # DEV ONLY: lets you test any scope from the browser/curl without a login.
-    x_demo_role: str | None = Header(default=None),
-    x_demo_college: str | None = Header(default=None),
-    x_demo_branch: str | None = Header(default=None),
-    x_demo_user: str | None = Header(default=None),
 ) -> Claims:
-    """Real path: verify the Bearer JWT and read scope claims from it.
-    Dev path: no/invalid token -> fall back to a scope (default admin @ the
-    demo college) so the POC renders. Replace the dev path with a hard 401
-    the moment real login is wired up."""
-    if authorization and authorization.lower().startswith("bearer "):
-        token = authorization.split(" ", 1)[1]
-        try:
-            payload = jwt.decode(
-                token, settings.jwt_secret, algorithms=[settings.jwt_alg]
-            )
-            return Claims(
-                role=payload.get("role", "student"),
-                college_id=_int_or_none(payload.get("college_id")),
-                branch_id=_int_or_none(payload.get("branch_id")),
-                user_id=_int_or_none(payload.get("user_id")),
-            )
-        except jwt.PyJWTError:
-            raise HTTPException(401, "Your session is invalid or has expired. Please sign in again.")
+    """Verify the Bearer JWT and read scope claims from it.
 
-    if settings.dev_fallback:
-        return Claims(
-            role=x_demo_role or "admin",
-            college_id=_int_or_none(x_demo_college) or 1,
-            branch_id=_int_or_none(x_demo_branch),
-            user_id=_int_or_none(x_demo_user),
+    The X-Demo-* header fallback that used to live here has been REMOVED.
+
+    What it did: when DEV_FALLBACK was true, an unauthenticated request
+    carrying `X-Demo-Role: owner` and `X-Demo-College: <n>` was handed owner
+    claims. Every RLS policy in this schema is shaped
+    `app_role() = 'owner' OR college_id = app_college()`, so those headers
+    granted unrestricted read and write across every college in the database
+    with no token at all. The flag defaulted to False, but it was passed
+    through docker-compose as `DEV_FALLBACK: ${DEV_FALLBACK}` — one character
+    in .env away from live, with no log line to say so.
+
+    Real login now exists (Google SSO, password, and activation-code claim),
+    which is the condition the original docstring set for deleting this path.
+    Use a real token in development; scripts/dev-token.py mints one.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(401, "Sign in to continue.")
+
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(
+            token, settings.jwt_secret, algorithms=[settings.jwt_alg]
         )
+    except jwt.PyJWTError:
+        raise HTTPException(401, "Your session is invalid or has expired. Please sign in again.")
 
-    # Never turn a missing/invalid session into an apparently successful empty
-    # data response. The client can now distinguish sign-in from no results.
-    raise HTTPException(401, "Sign in to continue.")
+    role = payload.get("role", "student")
+    # A token is not permitted to assert a role the application does not know.
+    # Without this, a forged or malformed 'role' string flows into
+    # set_config('app.role', ...) and is compared inside every RLS policy.
+    if role not in ("owner", "admin", "sub_admin", "student", "alumni"):
+        raise HTTPException(401, "Your session is invalid or has expired. Please sign in again.")
+
+    return Claims(
+        role=role,
+        college_id=_int_or_none(payload.get("college_id")),
+        branch_id=_int_or_none(payload.get("branch_id")),
+        user_id=_int_or_none(payload.get("user_id")),
+    )

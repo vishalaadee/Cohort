@@ -5,6 +5,7 @@ from sqlalchemy import text
 from ..auth import Claims, get_claims
 from ..db import tenant_connection
 from ..eligibility import RuleError, check_policy, evaluate_rules, legacy_rules_from_columns
+from ..permissions import require_cr_capability
 
 router = APIRouter(prefix="/api/admin", tags=["admin-extra"])
 
@@ -178,7 +179,7 @@ def save_policy(payload: dict, claims: Claims = Depends(get_claims)):
 # ------------------- registrants + pipeline write-side ---------------------
 @router.get("/companies/{cid}/registrations")
 def registrants(cid: int, claims: Claims = Depends(get_claims)):
-    _staff(claims)
+    require_cr_capability(claims, "export_registrations")
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT a.id, s.roll_no, s.full_name, b.code AS branch, s.cgpa,
@@ -194,7 +195,7 @@ def registrants(cid: int, claims: Claims = Depends(get_claims)):
 @router.patch("/applications/{aid}")
 def advance_application(aid: int, payload: dict, claims: Claims = Depends(get_claims)):
     """Advance/reject/place. Placing also records the offer."""
-    _staff(claims)
+    require_cr_capability(claims, "manage_branch_pipeline")
     rnd, status = payload.get("current_round"), payload.get("status")
     if claims.role == "sub_admin" and status is not None:
         raise HTTPException(403, "CRs can update interview rounds, but only the placement officer can change an application status")
@@ -262,7 +263,7 @@ def delete_note(nid: int, claims: Claims = Depends(get_claims)):
 # ------------------------- Q&A moderation ---------------------------------
 @router.get("/questions")
 def all_questions(claims: Claims = Depends(get_claims)):
-    _staff(claims)  # RLS: admin sees all; sub_admin sees own branch
+    require_cr_capability(claims, "manage_branch_questions")  # RLS: admin sees all; sub_admin sees own branch
     with tenant_connection(claims) as conn:
         rows = conn.execute(text("""
             SELECT q.id, q.title, q.body, q.status, q.answer, q.created_at,
@@ -277,7 +278,7 @@ def all_questions(claims: Claims = Depends(get_claims)):
 @router.patch("/questions/{qid}")
 def moderate_question(qid: int, payload: dict, claims: Claims = Depends(get_claims)):
     """CR escalates to the PO; PO answers (publishing it college-wide)."""
-    _staff(claims)
+    require_cr_capability(claims, "manage_branch_questions")
     action = payload.get("action")
     with tenant_connection(claims) as conn:
         if action == "escalate":

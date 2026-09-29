@@ -40,9 +40,45 @@ class Settings(BaseSettings):
     # When unset, the Google button is hidden and only password login works.
     google_client_id: str | None = None
 
-    # Real login exists now, so this defaults OFF. Set env DEV_FALLBACK=true
-    # for local demos only: unauthenticated requests then act as the demo admin.
-    dev_fallback: bool = False
+    # Trust X-Forwarded-For from the reverse proxy in front of this app.
+    # Caddy terminates TLS and proxies to uvicorn, so without this every
+    # request appears to come from Caddy's address and per-IP rate limiting
+    # collapses into a single shared bucket. Leave at 1 for the standard
+    # single-Caddy deployment; raise it only if you add another trusted hop.
+    trusted_proxy_hops: int = 1
 
 
 settings = Settings()
+
+
+# ---------------------------------------------------------------------------
+# Fail fast on a signing key that cannot protect anything.
+#
+# Why this is not paranoia: docker-compose passes `JWT_SECRET: ${JWT_SECRET}`.
+# If .env has no JWT_SECRET line, or the value is blank, the container starts
+# with JWT_SECRET set to the EMPTY STRING. pydantic-settings treats "" as a
+# real value, so the `dev-secret-change-me` default above does NOT apply, and
+# PyJWT will happily sign and verify HS256 with a zero-byte key — it emits a
+# warning, not an error. The app boots, /api/health returns "ok", and every
+# token on the platform is forgeable by anyone. Verified behaviour, not theory.
+#
+# Refusing to start is the only safe response: a broken deploy is recoverable,
+# a silently unauthenticated one is not.
+# ---------------------------------------------------------------------------
+_WEAK_SECRETS = {"", "dev-secret-change-me", "changeme", "secret", "test"}
+
+
+def _validate_jwt_secret() -> None:
+    secret = (settings.jwt_secret or "").strip()
+    if secret in _WEAK_SECRETS or len(secret) < 32:
+        raise RuntimeError(
+            "JWT_SECRET is missing, blank, or too short (need >= 32 chars). "
+            "Tokens signed with a weak or empty key can be forged by anyone. "
+            "Generate one with:  openssl rand -hex 32   "
+            "then set JWT_SECRET in .env and recreate the backend container. "
+            "Refusing to start."
+        )
+
+
+if os.getenv("ALLOW_WEAK_JWT_SECRET") != "1":
+    _validate_jwt_secret()

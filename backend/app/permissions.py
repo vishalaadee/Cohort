@@ -36,6 +36,10 @@ CR_CAPABILITIES = [
      "description": "Add non-final-year students for the assigned branch and issue their codes."},
     {"key": "export_registrations", "label": "Download registration sheets",
      "description": "Export the registration list for a drive, branch-scoped."},
+    {"key": "collect_outcomes", "label": "Collect student outcomes",
+     "description": "Record where branch students ended up — job, higher studies, "
+                    "venture, exam — and upload their proof. Always unverified: "
+                    "only the placement officer can sign an outcome off as evidence."},
 ]
 
 CR_CAPABILITY_KEYS = {cap["key"] for cap in CR_CAPABILITIES}
