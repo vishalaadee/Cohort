@@ -37,8 +37,14 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-Cohort}"
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
-      SMTP_SSL: ${SMTP_SSL:-false}
       SMTP_TIMEOUT: ${SMTP_TIMEOUT:-20}
+      # Public base URL of this deployment. Not optional once mail is on:
+      # the group-verification email builds its confirm link from this, and
+      # an empty value yields a relative URL that no mail client can follow,
+      # so notify_groups.verified_at is never set and publish_drive skips
+      # announcing forever with no error. Existed only as a hand-edit on the
+      # EC2 host until now.
+      PORTAL_URL: ${PORTAL_URL:-}
     expose:
       - "8000"
 

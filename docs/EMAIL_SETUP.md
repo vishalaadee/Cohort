@@ -185,7 +185,6 @@ Endpoint for your `.env`:
     SMTP_HOST=email-smtp.ap-south-1.amazonaws.com
     SMTP_PORT=587
     SMTP_STARTTLS=true
-    SMTP_SSL=false
 
 Port 587 with STARTTLS is the right choice. 2587 is the fallback if something
 blocks 587. Avoid port 25 — EC2 throttles it by default and ISPs block it.
@@ -257,10 +256,14 @@ setup, and nothing reaches a real college address until it clears.
     SMTP_FROM=placements@tracecampus.in
     SMTP_FROM_NAME=Placement Cell
     SMTP_STARTTLS=true
-    SMTP_SSL=false
     SMTP_TIMEOUT=20
+    PORTAL_URL=https://placements.yourdomain.in
 
-`SMTP_FROM` must be on the verified domain. Then:
+`SMTP_FROM` must be on the verified domain. `PORTAL_URL` must be the
+public URL this deployment answers on, with no trailing slash — the
+group-verification email builds its confirm link from it, and an empty
+value produces a link nobody can click, which means the group address
+never verifies and announcements are skipped in silence. Then:
 
     cd ~/Cohort/infra
     docker compose -f docker-compose.aws.yml up -d --force-recreate backend
